@@ -55,6 +55,7 @@ export default function KolsPage() {
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const [q, setQ] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
@@ -68,7 +69,10 @@ export default function KolsPage() {
   useEffect(() => {
     fetch("/api/kols/facets")
       .then((res) => res.json())
-      .then((body) => setFacets(body));
+      .then((body) => setFacets(body))
+      .catch(() => {
+        // Non-fatal: filter dropdowns just stay empty if this fails; the main fetch below surfaces the real error.
+      });
   }, []);
 
   useEffect(() => {
@@ -88,12 +92,17 @@ export default function KolsPage() {
     if (hasInstagram) query.set("hasInstagram", "true");
 
     setIsLoading(true);
+    setError(null);
     fetch(`/api/kols?${query.toString()}`)
-      .then((res) => res.json())
+      .then(async (res) => {
+        if (!res.ok) throw new Error(`Request failed (HTTP ${res.status})`);
+        return res.json();
+      })
       .then((body) => {
         setRows(body.results ?? []);
         setTotal(body.total ?? 0);
       })
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load nano KOLs"))
       .finally(() => setIsLoading(false));
   }, [debouncedQ, category, domisili, gender, minTiktokFollowers, hasInstagram, sort, page]);
 
@@ -103,6 +112,12 @@ export default function KolsPage() {
     <div>
       <h1 className="text-xl font-semibold text-slate-900">Nano KOL directory</h1>
       <p className="mt-1 text-sm text-slate-500">{total.toLocaleString()} curated nano creators (Blok M roster).</p>
+
+      {error && (
+        <div className="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          Couldn&apos;t load nano KOLs: {error}
+        </div>
+      )}
 
       <div className="mt-6 flex flex-wrap gap-3">
         <input
