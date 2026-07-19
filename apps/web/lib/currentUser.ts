@@ -1,6 +1,13 @@
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 
+const DEFAULT_USER_EMAIL = "internal@kolfinder.local";
+
+/** No login system — every write attributes to this single internal user. */
+export async function getDefaultUserId(): Promise<string> {
+  return getOrCreateUserId(DEFAULT_USER_EMAIL);
+}
+
 export async function getOrCreateUserId(email: string): Promise<string> {
   const db = getDb();
 

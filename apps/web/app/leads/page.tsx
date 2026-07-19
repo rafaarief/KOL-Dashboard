@@ -100,8 +100,8 @@ export default function LeadsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-slate-100">Leads</h1>
-      <p className="mt-1 text-sm text-slate-400">
+      <h1 className="text-xl font-semibold text-slate-900">Leads</h1>
+      <p className="mt-1 text-sm text-slate-500">
         {total.toLocaleString()} businesses in the lead database.
       </p>
 
@@ -110,12 +110,12 @@ export default function LeadsPage() {
           value={q}
           onChange={(event) => setQ(event.target.value)}
           placeholder="Search name, phone, website, Instagram, address"
-          className="w-72 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200 outline-none focus:border-indigo-500"
+          className="w-72 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-slate-900 outline-none focus:border-indigo-500"
         />
         <select
           value={categoryId}
           onChange={(event) => setCategoryId(event.target.value)}
-          className="rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-slate-900"
         >
           <option value="">All categories</option>
           {categories.map((category) => (
@@ -128,18 +128,18 @@ export default function LeadsPage() {
           value={province}
           onChange={(event) => setProvince(event.target.value)}
           placeholder="Province"
-          className="w-36 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="w-36 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-slate-900"
         />
         <input
           value={city}
           onChange={(event) => setCity(event.target.value)}
           placeholder="City"
-          className="w-36 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="w-36 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-slate-900"
         />
         <select
           value={crmStatus}
           onChange={(event) => setCrmStatus(event.target.value)}
-          className="rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-slate-900"
         >
           <option value="">All CRM statuses</option>
           {CRM_STATUSES.map((status) => (
@@ -152,12 +152,12 @@ export default function LeadsPage() {
           value={minRating}
           onChange={(event) => setMinRating(event.target.value)}
           placeholder="Min rating"
-          className="w-28 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="w-28 rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-slate-900"
         />
         <select
           value={sort}
           onChange={(event) => setSort(event.target.value)}
-          className="rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-slate-900"
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -167,7 +167,7 @@ export default function LeadsPage() {
         </select>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-300">
+      <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-600">
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={hasWebsite} onChange={(event) => setHasWebsite(event.target.checked)} />
           Has website
@@ -182,10 +182,10 @@ export default function LeadsPage() {
         </label>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border border-slate-800">
+      <div className="mt-6 overflow-x-auto rounded-xl border border-gray-200">
         <table className="w-full min-w-[1100px] text-left text-sm">
           <thead>
-            <tr className="border-b border-slate-800 bg-slate-900 text-xs uppercase tracking-wide text-slate-500">
+            <tr className="border-b border-gray-200 bg-gray-50 text-xs uppercase tracking-wide text-slate-500">
               <th className="px-4 py-3">Business</th>
               <th className="px-4 py-3">Category</th>
               <th className="px-4 py-3">Phone</th>
@@ -198,22 +198,22 @@ export default function LeadsPage() {
               <th className="px-4 py-3">Created</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
+          <tbody className="divide-y divide-gray-200">
             {rows.map(({ business, category }) => (
-              <tr key={business.id} className="text-slate-300 hover:bg-slate-900/60">
-                <td className="px-4 py-3 text-slate-100">{business.businessName}</td>
+              <tr key={business.id} className="text-slate-700 hover:bg-gray-50">
+                <td className="px-4 py-3 text-slate-900">{business.businessName}</td>
                 <td className="px-4 py-3">{category?.categoryName ?? "—"}</td>
                 <td className="px-4 py-3">
                   <span>{business.phone ?? "—"}</span>
                   {business.isWhatsappCandidate && (
-                    <span className="ml-2 rounded-full border border-emerald-800 bg-emerald-950/50 px-2 py-0.5 text-xs text-emerald-400">
+                    <span className="ml-2 rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-xs text-emerald-700">
                       WA
                     </span>
                   )}
                 </td>
                 <td className="px-4 py-3">
                   {business.website ? (
-                    <a href={business.website} target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">
+                    <a href={business.website} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">
                       Visit
                     </a>
                   ) : (
@@ -229,7 +229,7 @@ export default function LeadsPage() {
                 </td>
                 <td className="px-4 py-3">{business.leadScore}</td>
                 <td className="px-4 py-3">
-                  <span className="rounded-full border border-slate-700 px-2 py-0.5 text-xs text-slate-300">
+                  <span className="rounded-full border border-gray-300 px-2 py-0.5 text-xs text-slate-600">
                     {business.crmStatus}
                   </span>
                 </td>
@@ -247,7 +247,7 @@ export default function LeadsPage() {
         </table>
       </div>
 
-      <div className="mt-4 flex items-center justify-between text-sm text-slate-400">
+      <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
         <span>
           Page {page} of {totalPages}
         </span>
@@ -256,7 +256,7 @@ export default function LeadsPage() {
             type="button"
             disabled={page <= 1}
             onClick={() => setPage((current) => Math.max(1, current - 1))}
-            className="rounded-md border border-slate-700 px-3 py-1.5 disabled:opacity-40"
+            className="rounded-md border border-gray-300 px-3 py-1.5 disabled:opacity-40"
           >
             Previous
           </button>
@@ -264,7 +264,7 @@ export default function LeadsPage() {
             type="button"
             disabled={page >= totalPages}
             onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-            className="rounded-md border border-slate-700 px-3 py-1.5 disabled:opacity-40"
+            className="rounded-md border border-gray-300 px-3 py-1.5 disabled:opacity-40"
           >
             Next
           </button>

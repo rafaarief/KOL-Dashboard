@@ -8,7 +8,6 @@ const LINKS = [
   { href: "/search", label: "Search" },
   { href: "/history", label: "History" },
   { href: "/shortlists", label: "Shortlists" },
-  { href: "/leads", label: "Leads" },
 ];
 
 export function NavBar() {

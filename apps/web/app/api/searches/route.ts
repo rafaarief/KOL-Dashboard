@@ -2,23 +2,19 @@ import { NextResponse } from "next/server";
 import { desc } from "drizzle-orm";
 import { searchQueryRequestSchema } from "@kol-finder/schemas";
 import { interpretQuery } from "@kol-finder/ai";
-import { getSession } from "@/lib/auth";
 import { getDb, schema } from "@/lib/db";
-import { getOrCreateUserId } from "@/lib/currentUser";
+import { getDefaultUserId } from "@/lib/currentUser";
 import { getTikTokSearchQueue } from "@/lib/queue";
 
 /** FR-002/FR-003/FR-005 — accept a natural-language query, parse it, create the search job. */
 export async function POST(request: Request) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
-
   const body = await request.json().catch(() => null);
   const parsed = searchQueryRequestSchema.safeParse(body);
   if (!parsed.success) {
     return NextResponse.json({ error: "INVALID_INPUT", details: parsed.error.flatten() }, { status: 400 });
   }
 
-  const userId = await getOrCreateUserId(session.email);
+  const userId = await getDefaultUserId();
   const parsedQuery = await interpretQuery(parsed.data.query);
 
   const db = getDb();
@@ -43,9 +39,6 @@ export async function POST(request: Request) {
 
 /** FR — search history listing (PRD section 8.13). */
 export async function GET() {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
-
   const db = getDb();
   const searches = await db.select().from(schema.searches).orderBy(desc(schema.searches.createdAt)).limit(50);
 
