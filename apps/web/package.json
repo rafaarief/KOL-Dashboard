@@ -7,7 +7,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
   },
   "dependencies": {
     "@kol-finder/ai": "workspace:*",
@@ -15,21 +16,25 @@
     "@kol-finder/ranking": "workspace:*",
     "@kol-finder/schemas": "workspace:*",
     "@kol-finder/shared": "workspace:*",
+    "bcryptjs": "^2.4.3",
     "bullmq": "^5.28.1",
     "drizzle-orm": "^0.36.4",
     "ioredis": "^5.4.1",
     "next": "14.2.16",
+    "next-auth": "5.0.0-beta.25",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.9.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "autoprefixer": "^10.4.20",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
   }
 }
