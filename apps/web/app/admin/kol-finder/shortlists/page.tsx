@@ -67,7 +67,7 @@ export default function ShortlistsPage() {
         {shortlists.map((shortlist) => (
           <Link
             key={shortlist.id}
-            href={`/shortlists/${shortlist.id}`}
+            href={`/admin/kol-finder/shortlists/${shortlist.id}`}
             className="flex items-center justify-between px-4 py-3 hover:bg-slate-50"
           >
             <div>

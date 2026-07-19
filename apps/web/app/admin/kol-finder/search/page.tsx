@@ -43,7 +43,7 @@ export default function SearchPage() {
     }
 
     const body = await response.json();
-    router.push(`/search/${body.searchId}`);
+    router.push(`/admin/kol-finder/search/${body.searchId}`);
   }
 
   return (

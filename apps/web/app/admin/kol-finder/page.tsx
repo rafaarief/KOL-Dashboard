@@ -112,7 +112,7 @@ export default function DashboardPage() {
             <div className="rounded-xl border border-slate-200 bg-white p-5">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-slate-900">Recent searches</p>
-                <Link href="/history" className="text-xs text-indigo-600 hover:underline">
+                <Link href="/admin/kol-finder/history" className="text-xs text-indigo-600 hover:underline">
                   View all
                 </Link>
               </div>
@@ -120,7 +120,7 @@ export default function DashboardPage() {
                 {summary.recentSearches.map((search) => (
                   <Link
                     key={search.id}
-                    href={`/search/${search.id}`}
+                    href={`/admin/kol-finder/search/${search.id}`}
                     className="flex items-center justify-between py-2 text-sm hover:bg-slate-50"
                   >
                     <span className="truncate text-slate-800">{search.originalQuery}</span>
