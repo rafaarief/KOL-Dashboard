@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { sessionCookieName, verifySessionToken } from "./lib/auth";
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login"];
+const PUBLIC_PATHS = ["/login", "/api/auth/login", "/leads", "/api/leads", "/api/categories"];
 
 export async function middleware(request: NextRequest) {
   const isPublic = PUBLIC_PATHS.some((path) => request.nextUrl.pathname.startsWith(path));
