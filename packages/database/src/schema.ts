@@ -234,6 +234,39 @@ export const nanoKols = pgTable(
   })
 );
 
+// --- BoothyClub KOL visit tracker: campaign/visit log (which creator visited which branch,
+// posting status), imported from the "BOOTHYCLUB - KOL DATABASE" sheet. Distinct from
+// `nanoKols` (a static contact directory) — this is per-visit campaign activity. ---
+
+export const kolVisits = pgTable(
+  "kol_visits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    sourceRowNumber: integer("source_row_number"),
+    month: text("month"),
+    week: text("week"),
+    name: text("name"),
+    platform: text("platform"),
+    tier: text("tier"),
+    branch: text("branch"),
+    visitDate: text("visit_date"),
+    deadline: text("deadline"),
+    status: text("status"),
+    normalizedStatus: text("normalized_status"),
+    accountLink: text("account_link"),
+    postLink: text("post_link"),
+    currentStatus: text("current_status"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    sourceRowUnique: uniqueIndex("kol_visits_source_row_number_idx").on(table.sourceRowNumber),
+    branchIdx: index("kol_visits_branch_idx").on(table.branch),
+    tierIdx: index("kol_visits_tier_idx").on(table.tier),
+    statusIdx: index("kol_visits_normalized_status_idx").on(table.normalizedStatus),
+  })
+);
+
 // --- CariLeads: Google Maps business lead intelligence (Sprint 1.1) ---
 
 export const categories = pgTable("categories", {

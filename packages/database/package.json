@@ -10,7 +10,8 @@
     "generate": "drizzle-kit generate",
     "migrate": "tsx src/migrate.ts",
     "seed": "tsx src/seed.ts",
-    "import:nano-kols": "tsx src/importNanoKols.ts"
+    "import:nano-kols": "tsx src/importNanoKols.ts",
+    "import:kol-visits": "tsx src/importKolVisits.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.36.4",
