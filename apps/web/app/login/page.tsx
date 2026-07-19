@@ -30,7 +30,7 @@ function LoginForm() {
       return;
     }
 
-    router.push(searchParams.get("next") ?? "/search");
+    router.push(searchParams.get("next") ?? "/kols");
     router.refresh();
   }
 
