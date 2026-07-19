@@ -10,6 +10,7 @@ export const sortModeSchema = z.enum([
 
 export const searchQueryRequestSchema = z.object({
   query: z.string().min(2).max(500),
+  maximumCreators: z.number().int().positive().max(200).optional(),
 });
 export type SearchQueryRequest = z.infer<typeof searchQueryRequestSchema>;
 

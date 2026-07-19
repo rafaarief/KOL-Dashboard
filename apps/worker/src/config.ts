@@ -26,4 +26,9 @@ export const config = {
   defaultResultLimit: Number.parseInt(process.env.DEFAULT_RESULT_LIMIT ?? "30", 10),
   healthCheckPort: Number.parseInt(process.env.PORT ?? "8787", 10),
   tiktokStorageStatePath: process.env.TIKTOK_STORAGE_STATE_PATH ?? defaultStorageStatePath,
+  scraperSource: (process.env.SCRAPER_SOURCE === "apify" ? "apify" : "browser") as "browser" | "apify",
+  apifyTikTokActorId: process.env.APIFY_TIKTOK_ACTOR_ID ?? "GdWCkxBtKWOsKjdch",
+  get apifyApiToken() {
+    return requireEnv("APIFY_API_TOKEN");
+  },
 };

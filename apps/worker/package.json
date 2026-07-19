@@ -16,6 +16,7 @@
     "@kol-finder/ranking": "workspace:*",
     "@kol-finder/schemas": "workspace:*",
     "@kol-finder/shared": "workspace:*",
+    "apify-client": "^2.11.0",
     "bullmq": "^5.28.1",
     "drizzle-orm": "^0.36.4",
     "ioredis": "^5.4.1",

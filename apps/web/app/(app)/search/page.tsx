@@ -14,6 +14,7 @@ const EXAMPLE_QUERIES = [
 export default function SearchPage() {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [quantity, setQuantity] = useState("30");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -24,10 +25,15 @@ export default function SearchPage() {
     setIsSubmitting(true);
     setError(null);
 
+    const maximumCreators = Number.parseInt(quantity, 10);
+
     const response = await fetch("/api/searches", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ query }),
+      body: JSON.stringify({
+        query,
+        ...(Number.isFinite(maximumCreators) && maximumCreators > 0 ? { maximumCreators } : {}),
+      }),
     });
 
     if (!response.ok) {
@@ -55,6 +61,21 @@ export default function SearchPage() {
           rows={3}
           className="w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-indigo-500"
         />
+        <div className="mt-3 flex items-center gap-2">
+          <label htmlFor="quantity" className="text-sm text-slate-600">
+            How many creators
+          </label>
+          <input
+            id="quantity"
+            type="number"
+            min={1}
+            max={200}
+            value={quantity}
+            onChange={(event) => setQuantity(event.target.value)}
+            className="w-24 rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-800 outline-none focus:border-indigo-500"
+          />
+        </div>
+
         {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
         <button
           type="submit"

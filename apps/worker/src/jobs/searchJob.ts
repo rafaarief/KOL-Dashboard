@@ -4,9 +4,12 @@ import { parsedQuerySchema, type NormalizedVideo, type TikTokSearchJob } from "@
 import { classifyNiche } from "@kol-finder/ai";
 import { ScraperError } from "@kol-finder/shared";
 import { browserManager } from "../browser/browserManager.js";
-import { scrapeSearchResults } from "../extractors/tiktok/browserSearch.js";
+import { scrapeSearchResults, type ScrapeSearchOutput } from "../extractors/tiktok/browserSearch.js";
 import { scrapeCreatorProfile } from "../extractors/tiktok/browserProfile.js";
+import { scrapeSearchResultsViaApify } from "../extractors/apify/apifySearch.js";
+import { scrapeCreatorProfileViaApify } from "../extractors/apify/apifyProfile.js";
 import { normalizeVideo } from "../normalizers/videoNormalizer.js";
+import { config } from "../config.js";
 import { dedupeCandidateCreators } from "./dedupeCandidates.js";
 import { scoreCreatorCandidate } from "../ranking/scoreCreator.js";
 import {
@@ -32,6 +35,23 @@ async function loadSearch(searchId: string) {
   return search;
 }
 
+/** Dispatches to the Apify actor or the Playwright browser depending on config.scraperSource. */
+async function fetchSearchResults(searchId: string, keyword: string, maximumVideos: number): Promise<ScrapeSearchOutput> {
+  if (config.scraperSource === "apify") {
+    return scrapeSearchResultsViaApify({ searchId, keyword, maximumVideos });
+  }
+  return browserManager.withContext((context) => scrapeSearchResults(context, { searchId, keyword, maximumVideos }));
+}
+
+async function fetchCreatorProfile(profileUrl: string, username: string, recentVideoLimit: number) {
+  if (config.scraperSource === "apify") {
+    return scrapeCreatorProfileViaApify({ profileUrl, username, recentVideoLimit });
+  }
+  return browserManager.withContext((context) =>
+    scrapeCreatorProfile(context, { profileUrl, username, recentVideoLimit })
+  );
+}
+
 /**
  * The main search pipeline — mirrors PRD section 21 step by step. A single creator or
  * keyword failing must not fail the whole search (PRD 10.1 reliability); only terminal
@@ -48,39 +68,33 @@ export async function runSearchJob(payload: TikTokSearchJob): Promise<void> {
   let errorCount = 0;
 
   try {
-    await browserManager.withContext(async (context) => {
-      for (const keyword of parsedQuery.keywordVariations) {
-        if (await isSearchCancelled(searchId)) return;
+    for (const keyword of parsedQuery.keywordVariations) {
+      if (await isSearchCancelled(searchId)) break;
 
-        const keywordId = await recordSearchKeyword(searchId, keyword, keyword === parsedQuery.primaryKeyword ? "direct" : "semantic");
+      const keywordId = await recordSearchKeyword(searchId, keyword, keyword === parsedQuery.primaryKeyword ? "direct" : "semantic");
 
-        try {
-          const result = await scrapeSearchResults(context, {
-            searchId,
-            keyword,
-            maximumVideos: parsedQuery.maximumCreators * 2,
-          });
+      try {
+        const result = await fetchSearchResults(searchId, keyword, parsedQuery.maximumCreators * 2);
 
-          const normalized = result.videos.map((video) => normalizeVideo(video, parsedQuery));
-          candidateVideos.push(...normalized);
+        const normalized = result.videos.map((video) => normalizeVideo(video, parsedQuery));
+        candidateVideos.push(...normalized);
 
-          await updateSearchKeywordResult(keywordId, result.videos.length, "completed");
-        } catch (error) {
-          errorCount += 1;
-          await updateSearchKeywordResult(keywordId, 0, "failed");
-          await recordScrapingEvent({
-            searchId,
-            jobId: searchId,
-            eventType: "keyword_search",
-            status: "failed",
-            errorCode: error instanceof ScraperError ? error.code : "NAVIGATION_TIMEOUT",
-            errorMessage: String(error),
-          });
+        await updateSearchKeywordResult(keywordId, result.videos.length, "completed");
+      } catch (error) {
+        errorCount += 1;
+        await updateSearchKeywordResult(keywordId, 0, "failed");
+        await recordScrapingEvent({
+          searchId,
+          jobId: searchId,
+          eventType: "keyword_search",
+          status: "failed",
+          errorCode: error instanceof ScraperError ? error.code : "NAVIGATION_TIMEOUT",
+          errorMessage: String(error),
+        });
 
-          if (error instanceof ScraperError && error.isTerminal) throw error;
-        }
+        if (error instanceof ScraperError && error.isTerminal) throw error;
       }
-    });
+    }
   } catch (error) {
     if (error instanceof ScraperError && error.isTerminal) {
       await markSearchStatus(searchId, {
@@ -128,13 +142,7 @@ export async function runSearchJob(payload: TikTokSearchJob): Promise<void> {
     if (await isSearchCancelled(searchId)) return;
 
     try {
-      const profile = await browserManager.withContext((context) =>
-        scrapeCreatorProfile(context, {
-          profileUrl: candidate.profileUrl,
-          username: candidate.username,
-          recentVideoLimit: parsedQuery.recentVideoLimit,
-        })
-      );
+      const profile = await fetchCreatorProfile(candidate.profileUrl, candidate.username, parsedQuery.recentVideoLimit);
 
       const recentVideos = profile.recentVideos.map((video) => normalizeVideo(video, parsedQuery));
 

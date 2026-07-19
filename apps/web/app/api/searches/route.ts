@@ -19,6 +19,9 @@ export async function POST(request: Request) {
 
   const userId = await getDefaultUserId();
   const parsedQuery = await interpretQuery(parsed.data.query);
+  if (parsed.data.maximumCreators) {
+    parsedQuery.maximumCreators = parsed.data.maximumCreators;
+  }
 
   const db = getDb();
   const [search] = await db
