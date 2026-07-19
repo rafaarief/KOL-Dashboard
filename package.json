@@ -1,0 +1,21 @@
+{
+  "name": "kol-finder",
+  "private": true,
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter @kol-finder/web dev",
+    "dev:worker": "pnpm --filter @kol-finder/worker dev",
+    "build": "pnpm -r --filter=./packages/* build && pnpm --filter @kol-finder/web build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "db:generate": "pnpm --filter @kol-finder/database generate",
+    "db:migrate": "pnpm --filter @kol-finder/database migrate",
+    "db:seed": "pnpm --filter @kol-finder/database seed"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}

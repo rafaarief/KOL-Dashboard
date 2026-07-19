@@ -1,0 +1,51 @@
+{
+  "__DEFAULT_SCOPE__": {
+    "webapp.user-detail": {
+      "userInfo": {
+        "user": {
+          "id": "6800000000000000001",
+          "uniqueId": "jalanjalanblokm",
+          "nickname": "Jalan Jalan Blok M",
+          "avatarLarger": "https://example.com/avatar.jpg",
+          "signature": "Review tempat nongkrong dan hidden gems Jakarta Selatan",
+          "verified": false,
+          "bioLink": { "link": "linktr.ee/jalanjalanblokm" }
+        },
+        "stats": {
+          "followerCount": 48200,
+          "followingCount": 310,
+          "heartCount": 1700000,
+          "videoCount": 412
+        }
+      }
+    },
+    "webapp.user-post": {
+      "itemList": [
+        {
+          "id": "7123456789012345678",
+          "desc": "Photobooth seru di Blok M! #photoboothblokm",
+          "createTime": 1752566400,
+          "author": { "id": "6800000000000000001", "uniqueId": "jalanjalanblokm" },
+          "video": { "cover": "https://example.com/cover1.jpg" },
+          "stats": { "playCount": 184000, "diggCount": 15200, "commentCount": 340, "shareCount": 210 }
+        },
+        {
+          "id": "7123456789012345680",
+          "desc": "Cafe baru di Senopati",
+          "createTime": 1752307200,
+          "author": { "id": "6800000000000000001", "uniqueId": "jalanjalanblokm" },
+          "video": { "cover": "https://example.com/cover3.jpg" },
+          "stats": { "playCount": 62000, "diggCount": 5200, "commentCount": 90, "shareCount": 40 }
+        },
+        {
+          "id": "7123456789012345681",
+          "desc": "Hidden gem Jakarta Selatan",
+          "createTime": 1752048000,
+          "author": { "id": "6800000000000000001", "uniqueId": "jalanjalanblokm" },
+          "video": { "cover": "https://example.com/cover4.jpg" },
+          "stats": { "playCount": 71000, "diggCount": 6100, "commentCount": 88, "shareCount": 33 }
+        }
+      ]
+    }
+  }
+}

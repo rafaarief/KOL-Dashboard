@@ -1,0 +1,48 @@
+import { NextResponse } from "next/server";
+import { desc } from "drizzle-orm";
+import { z } from "zod";
+import { getSession } from "@/lib/auth";
+import { getDb, schema } from "@/lib/db";
+import { getOrCreateUserId } from "@/lib/currentUser";
+
+const createShortlistSchema = z.object({
+  name: z.string().min(1),
+  clientName: z.string().nullable().optional(),
+  campaignName: z.string().nullable().optional(),
+  campaignBrief: z.string().nullable().optional(),
+});
+
+export async function GET() {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+
+  const db = getDb();
+  const shortlists = await db.select().from(schema.shortlists).orderBy(desc(schema.shortlists.createdAt));
+
+  return NextResponse.json({ shortlists });
+}
+
+export async function POST(request: Request) {
+  const session = await getSession();
+  if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
+
+  const body = await request.json().catch(() => null);
+  const parsed = createShortlistSchema.safeParse(body);
+  if (!parsed.success) return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
+
+  const userId = await getOrCreateUserId(session.email);
+  const db = getDb();
+
+  const [shortlist] = await db
+    .insert(schema.shortlists)
+    .values({
+      name: parsed.data.name,
+      clientName: parsed.data.clientName ?? null,
+      campaignName: parsed.data.campaignName ?? null,
+      campaignBrief: parsed.data.campaignBrief ?? null,
+      createdBy: userId,
+    })
+    .returning();
+
+  return NextResponse.json({ shortlist }, { status: 201 });
+}

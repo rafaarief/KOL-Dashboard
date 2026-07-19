@@ -1,0 +1,54 @@
+{
+  "__DEFAULT_SCOPE__": {
+    "webapp.search-result": {
+      "data": [
+        {
+          "item": {
+            "id": "7123456789012345678",
+            "desc": "Photobooth seru di Blok M! #photoboothblokm #jakartaselatan",
+            "createTime": 1752566400,
+            "author": {
+              "id": "6800000000000000001",
+              "uniqueId": "jalanjalanblokm",
+              "nickname": "Jalan Jalan Blok M"
+            },
+            "video": {
+              "cover": "https://example.com/cover1.jpg"
+            },
+            "stats": {
+              "playCount": 184000,
+              "diggCount": 15200,
+              "commentCount": 340,
+              "shareCount": 210
+            },
+            "textExtra": [
+              { "hashtagName": "photoboothblokm" },
+              { "hashtagName": "jakartaselatan" }
+            ]
+          }
+        },
+        {
+          "item": {
+            "id": "7123456789012345679",
+            "desc": "Review tempat foto box murah",
+            "createTime": 1752480000,
+            "author": {
+              "id": "6800000000000000002",
+              "uniqueId": "fotoboxreview",
+              "nickname": "Foto Box Review"
+            },
+            "video": {
+              "cover": "https://example.com/cover2.jpg"
+            },
+            "stats": {
+              "playCount": 4200,
+              "diggCount": 300,
+              "commentCount": 12,
+              "shareCount": 5
+            }
+          }
+        }
+      ]
+    }
+  }
+}

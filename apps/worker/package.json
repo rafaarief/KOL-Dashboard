@@ -1,0 +1,32 @@
+{
+  "name": "@kol-finder/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --env-file=../../.env.local --import tsx --watch src/index.ts",
+    "start": "node --env-file=../../.env.local --import tsx src/index.ts",
+    "auth:tiktok": "node --env-file=../../.env.local --import tsx src/scripts/tiktokLogin.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@kol-finder/ai": "workspace:*",
+    "@kol-finder/database": "workspace:*",
+    "@kol-finder/ranking": "workspace:*",
+    "@kol-finder/schemas": "workspace:*",
+    "@kol-finder/shared": "workspace:*",
+    "bullmq": "^5.28.1",
+    "drizzle-orm": "^0.36.4",
+    "ioredis": "^5.4.1",
+    "pino": "^9.5.0",
+    "playwright": "^1.48.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.4"
+  }
+}

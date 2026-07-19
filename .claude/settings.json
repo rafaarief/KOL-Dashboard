@@ -1,0 +1,27 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(lsof -nP -iTCP -sTCP:LISTEN)",
+      "Bash(redis-cli ping *)",
+      "Bash(docker compose *)",
+      "Bash(nohup pnpm dev:worker)",
+      "Bash(disown)",
+      "Bash(mkdir -p /private/tmp/claude-501/-Users-rafaarief-kol-finder/a4319017-0bf2-45fa-b0f9-9110f56077c0/scratchpad)",
+      "Bash(node --env-file=../../.env.local --import tsx src/debugScrapeCli.ts \"photobooth blok m\" 100)",
+      "Bash(node --env-file=../../.env.local --import tsx src/debugScrapeCli.ts \"photobooth blok m\" 100 --raw)",
+      "Bash(node -e ' *)",
+      "Bash(node --env-file=../../.env.local --import tsx src/debugScrapeCli.ts \"photobooth blok m\" 100 --sniff)",
+      "Bash(node --env-file=../../.env.local --import tsx -e ' *)",
+      "Bash(nohup pnpm run auth:tiktok)",
+      "Skill(claude-api)",
+      "Skill(claude-api:*)",
+      "Bash(ls /Users/rafaarief/ | head -30)",
+      "Read(//Users/rafaarief/**)",
+      "Bash(npm view *)",
+      "Bash(node -e \"const v=JSON.parse\\(require\\('fs'\\).readFileSync\\(0,'utf8'\\)\\); console.log\\(v.slice\\(-15\\).join\\('\\\\n'\\)\\)\")"
+    ],
+    "additionalDirectories": [
+      "/Users/rafaarief/personal-finance-os"
+    ]
+  }
+}
