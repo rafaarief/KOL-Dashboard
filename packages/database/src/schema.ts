@@ -13,18 +13,68 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
+/** `role` is a free-text column (not a DB enum) so the pre-existing "specialist" rows used by
+ * internal KOL Finder automation (see getDefaultUserId()) keep working untouched. OpenCollab
+ * app code should only ever write "creator" | "brand" | "admin" | "specialist" here. */
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
   fullName: text("full_name"),
   role: text("role").notNull().default("specialist"),
+  passwordHash: text("password_hash"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
 });
 
+/** Auth.js (NextAuth v5) Drizzle adapter tables — only Credentials/JWT auth is wired up today,
+ * but these keep the schema ready for OAuth providers later without another migration. */
+export const accounts = pgTable(
+  "accounts",
+  {
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    type: text("type").notNull(),
+    provider: text("provider").notNull(),
+    providerAccountId: text("provider_account_id").notNull(),
+    refreshToken: text("refresh_token"),
+    accessToken: text("access_token"),
+    expiresAt: integer("expires_at"),
+    tokenType: text("token_type"),
+    scope: text("scope"),
+    idToken: text("id_token"),
+    sessionState: text("session_state"),
+  },
+  (table) => ({
+    providerAccountUnique: uniqueIndex("accounts_provider_account_idx").on(table.provider, table.providerAccountId),
+  })
+);
+
+export const sessions = pgTable("sessions", {
+  sessionToken: text("session_token").primaryKey(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  expires: timestamp("expires", { withTimezone: true }).notNull(),
+});
+
+export const verificationTokens = pgTable(
+  "verification_tokens",
+  {
+    identifier: text("identifier").notNull(),
+    token: text("token").notNull(),
+    expires: timestamp("expires", { withTimezone: true }).notNull(),
+  },
+  (table) => ({
+    identifierTokenUnique: uniqueIndex("verification_tokens_identifier_token_idx").on(table.identifier, table.token),
+  })
+);
+
 export const searches = pgTable("searches", {
   id: uuid("id").primaryKey().defaultRandom(),
-  createdBy: uuid("created_by").notNull(),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id),
   originalQuery: text("original_query").notNull(),
   parsedQuery: jsonb("parsed_query").notNull(),
   status: text("status").notNull().default("queued"),
@@ -155,7 +205,9 @@ export const shortlists = pgTable("shortlists", {
   clientName: text("client_name"),
   campaignName: text("campaign_name"),
   campaignBrief: text("campaign_brief"),
-  createdBy: uuid("created_by").notNull(),
+  createdBy: uuid("created_by")
+    .notNull()
+    .references(() => users.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -174,7 +226,9 @@ export const shortlistCreators = pgTable("shortlist_creators", {
   proposedDeliverable: text("proposed_deliverable"),
   proposedPrice: numeric("proposed_price", { precision: 12, scale: 2 }),
   finalPrice: numeric("final_price", { precision: 12, scale: 2 }),
-  addedBy: uuid("added_by").notNull(),
+  addedBy: uuid("added_by")
+    .notNull()
+    .references(() => users.id),
   addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
@@ -333,4 +387,439 @@ export const creatorsRelations = relations(creators, ({ many }) => ({
 
 export const shortlistsRelations = relations(shortlists, ({ many }) => ({
   creators: many(shortlistCreators),
+}));
+
+// ============================================================================
+// OpenCollab.id — brand/creator collaboration marketplace
+//
+// Reuses the existing `searches` / `creators` / `videos` / `search_results` tables above as
+// the KOL-scrape data source (the spec's "kol_scrape_searches"/"kol_scrape_results" — not
+// duplicated here). `categories` above belongs to the separate Business Leads product; the
+// marketplace's own taxonomy table is named `marketplace_categories` to avoid collision.
+// ============================================================================
+
+export const marketplaceCategories = pgTable("marketplace_categories", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  slug: text("slug").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const niches = pgTable("niches", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  slug: text("slug").notNull().unique(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const platforms = pgTable("platforms", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  slug: text("slug").notNull().unique(),
+});
+
+export const collaborationTypes = pgTable("collaboration_types", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull().unique(),
+  slug: text("slug").notNull().unique(),
+});
+
+export const creatorProfiles = pgTable(
+  "creator_profiles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" })
+      .unique(),
+    username: text("username").notNull().unique(),
+    displayName: text("display_name").notNull(),
+    city: text("city"),
+    bio: text("bio"),
+    avatarUrl: text("avatar_url"),
+    coverImageUrl: text("cover_image_url"),
+    primaryNicheId: uuid("primary_niche_id").references(() => niches.id),
+    availabilityStatus: text("availability_status").notNull().default("open"), // open | limited | fully_booked | unavailable
+    availableFrom: timestamp("available_from", { withTimezone: true }),
+    availableUntil: timestamp("available_until", { withTimezone: true }),
+    monthlyCapacity: integer("monthly_capacity"),
+    slotsRemaining: integer("slots_remaining"),
+    minimumBudget: numeric("minimum_budget", { precision: 14, scale: 2 }),
+    acceptsBarter: boolean("accepts_barter").notNull().default(false),
+    acceptsAffiliate: boolean("accepts_affiliate").notNull().default(false),
+    acceptsPaid: boolean("accepts_paid").notNull().default(true),
+    acceptsEventAttendance: boolean("accepts_event_attendance").notNull().default(false),
+    acceptsAmbassador: boolean("accepts_ambassador").notNull().default(false),
+    contactEmail: text("contact_email"),
+    contactWhatsapp: text("contact_whatsapp"),
+    contactVisible: boolean("contact_visible").notNull().default(false),
+    verificationStatus: text("verification_status").notNull().default("unverified"), // unverified | pending | verified | rejected
+    featured: boolean("featured").notNull().default(false),
+    status: text("status").notNull().default("active"), // active | suspended
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    availabilityIdx: index("creator_profiles_availability_idx").on(table.availabilityStatus),
+    nicheIdx: index("creator_profiles_niche_idx").on(table.primaryNicheId),
+  })
+);
+
+export const creatorNiches = pgTable(
+  "creator_niches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    creatorProfileId: uuid("creator_profile_id")
+      .notNull()
+      .references(() => creatorProfiles.id, { onDelete: "cascade" }),
+    nicheId: uuid("niche_id")
+      .notNull()
+      .references(() => niches.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    uniquePair: uniqueIndex("creator_niches_unique_idx").on(table.creatorProfileId, table.nicheId),
+  })
+);
+
+export const creatorSocialAccounts = pgTable(
+  "creator_social_accounts",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    creatorProfileId: uuid("creator_profile_id")
+      .notNull()
+      .references(() => creatorProfiles.id, { onDelete: "cascade" }),
+    platformId: uuid("platform_id")
+      .notNull()
+      .references(() => platforms.id),
+    username: text("username").notNull(),
+    profileUrl: text("profile_url"),
+    followerCount: bigint("follower_count", { mode: "number" }).notNull().default(0),
+    averageViews: bigint("average_views", { mode: "number" }),
+    engagementRate: numeric("engagement_rate", { precision: 5, scale: 2 }),
+    isPrimary: boolean("is_primary").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    uniquePlatformUsername: uniqueIndex("creator_social_accounts_platform_username_idx").on(
+      table.platformId,
+      table.username
+    ),
+    creatorIdx: index("creator_social_accounts_creator_idx").on(table.creatorProfileId),
+  })
+);
+
+export const creatorRateCards = pgTable("creator_rate_cards", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  creatorProfileId: uuid("creator_profile_id")
+    .notNull()
+    .references(() => creatorProfiles.id, { onDelete: "cascade" }),
+  deliverableType: text("deliverable_type").notNull(),
+  price: numeric("price", { precision: 14, scale: 2 }),
+  visibility: text("visibility").notNull().default("starting_from"), // public | starting_from | negotiable | contact
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const creatorPortfolioItems = pgTable("creator_portfolio_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  creatorProfileId: uuid("creator_profile_id")
+    .notNull()
+    .references(() => creatorProfiles.id, { onDelete: "cascade" }),
+  title: text("title").notNull(),
+  description: text("description"),
+  mediaUrl: text("media_url"),
+  linkUrl: text("link_url"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const creatorBrandExperiences = pgTable("creator_brand_experiences", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  creatorProfileId: uuid("creator_profile_id")
+    .notNull()
+    .references(() => creatorProfiles.id, { onDelete: "cascade" }),
+  brandName: text("brand_name").notNull(),
+  description: text("description"),
+  year: integer("year"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const brandProfiles = pgTable(
+  "brand_profiles",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" })
+      .unique(),
+    slug: text("slug").notNull().unique(),
+    brandName: text("brand_name").notNull(),
+    industry: text("industry"),
+    city: text("city"),
+    logoUrl: text("logo_url"),
+    description: text("description"),
+    website: text("website"),
+    contactEmail: text("contact_email"),
+    contactVisible: boolean("contact_visible").notNull().default(false),
+    verificationStatus: text("verification_status").notNull().default("unverified"),
+    featured: boolean("featured").notNull().default(false),
+    status: text("status").notNull().default("active"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    industryIdx: index("brand_profiles_industry_idx").on(table.industry),
+  })
+);
+
+export const brandSocialAccounts = pgTable("brand_social_accounts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  brandProfileId: uuid("brand_profile_id")
+    .notNull()
+    .references(() => brandProfiles.id, { onDelete: "cascade" }),
+  platformId: uuid("platform_id")
+    .notNull()
+    .references(() => platforms.id),
+  url: text("url").notNull(),
+});
+
+export const campaigns = pgTable(
+  "campaigns",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    brandProfileId: uuid("brand_profile_id")
+      .notNull()
+      .references(() => brandProfiles.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    slug: text("slug").notNull().unique(),
+    categoryId: uuid("category_id").references(() => marketplaceCategories.id),
+    shortDescription: text("short_description").notNull(),
+    fullDescription: text("full_description").notNull(),
+    productOrService: text("product_or_service"),
+    locationType: text("location_type").notNull().default("remote"), // remote | onsite | hybrid
+    city: text("city"),
+    province: text("province"),
+    isRemote: boolean("is_remote").notNull().default(true),
+    creatorCountNeeded: integer("creator_count_needed").notNull().default(1),
+    creatorCountAccepted: integer("creator_count_accepted").notNull().default(0),
+    budgetType: text("budget_type").notNull().default("fixed"), // fixed | range | barter | affiliate | negotiable
+    budgetMin: numeric("budget_min", { precision: 14, scale: 2 }),
+    budgetMax: numeric("budget_max", { precision: 14, scale: 2 }),
+    budgetPerCreator: numeric("budget_per_creator", { precision: 14, scale: 2 }),
+    currency: text("currency").notNull().default("IDR"),
+    compensationType: text("compensation_type").notNull().default("paid"),
+    deliverables: jsonb("deliverables").notNull().default([]),
+    requirements: text("requirements"),
+    requiredLanguage: text("required_language"),
+    usageRights: text("usage_rights"),
+    minimumFollowers: integer("minimum_followers"),
+    maximumFollowers: integer("maximum_followers"),
+    preferredCreatorTypes: jsonb("preferred_creator_types").notNull().default([]),
+    applicationDeadline: timestamp("application_deadline", { withTimezone: true }),
+    contentDeadline: timestamp("content_deadline", { withTimezone: true }),
+    campaignStartDate: timestamp("campaign_start_date", { withTimezone: true }),
+    campaignEndDate: timestamp("campaign_end_date", { withTimezone: true }),
+    status: text("status").notNull().default("draft"),
+    featured: boolean("featured").notNull().default(false),
+    publishedAt: timestamp("published_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    statusIdx: index("campaigns_status_idx").on(table.status),
+    brandIdx: index("campaigns_brand_idx").on(table.brandProfileId),
+    categoryIdx: index("campaigns_category_idx").on(table.categoryId),
+  })
+);
+
+export const campaignNiches = pgTable(
+  "campaign_niches",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    nicheId: uuid("niche_id")
+      .notNull()
+      .references(() => niches.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    uniquePair: uniqueIndex("campaign_niches_unique_idx").on(table.campaignId, table.nicheId),
+  })
+);
+
+export const campaignPlatforms = pgTable(
+  "campaign_platforms",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    platformId: uuid("platform_id")
+      .notNull()
+      .references(() => platforms.id, { onDelete: "cascade" }),
+  },
+  (table) => ({
+    uniquePair: uniqueIndex("campaign_platforms_unique_idx").on(table.campaignId, table.platformId),
+  })
+);
+
+export const campaignApplications = pgTable(
+  "campaign_applications",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    creatorProfileId: uuid("creator_profile_id")
+      .notNull()
+      .references(() => creatorProfiles.id, { onDelete: "cascade" }),
+    pitch: text("pitch").notNull(),
+    proposedRate: numeric("proposed_rate", { precision: 14, scale: 2 }),
+    selectedSocialAccountId: uuid("selected_social_account_id").references(() => creatorSocialAccounts.id),
+    portfolioLinks: jsonb("portfolio_links").notNull().default([]),
+    estimatedDeliveryDays: integer("estimated_delivery_days"),
+    note: text("note"),
+    status: text("status").notNull().default("submitted"), // submitted | viewed | shortlisted | accepted | rejected | withdrawn
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    uniqueApplication: uniqueIndex("campaign_applications_unique_idx").on(table.campaignId, table.creatorProfileId),
+    campaignIdx: index("campaign_applications_campaign_idx").on(table.campaignId),
+    creatorIdx: index("campaign_applications_creator_idx").on(table.creatorProfileId),
+  })
+);
+
+export const campaignInvitations = pgTable(
+  "campaign_invitations",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    creatorProfileId: uuid("creator_profile_id")
+      .notNull()
+      .references(() => creatorProfiles.id, { onDelete: "cascade" }),
+    brandProfileId: uuid("brand_profile_id")
+      .notNull()
+      .references(() => brandProfiles.id, { onDelete: "cascade" }),
+    message: text("message"),
+    status: text("status").notNull().default("pending"), // pending | accepted | declined
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    uniqueInvitation: uniqueIndex("campaign_invitations_unique_idx").on(table.campaignId, table.creatorProfileId),
+  })
+);
+
+export const savedCampaigns = pgTable(
+  "saved_campaigns",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    campaignId: uuid("campaign_id")
+      .notNull()
+      .references(() => campaigns.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    uniqueSave: uniqueIndex("saved_campaigns_unique_idx").on(table.userId, table.campaignId),
+  })
+);
+
+export const savedCreators = pgTable(
+  "saved_creators",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    creatorProfileId: uuid("creator_profile_id")
+      .notNull()
+      .references(() => creatorProfiles.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    uniqueSave: uniqueIndex("saved_creators_unique_idx").on(table.userId, table.creatorProfileId),
+  })
+);
+
+export const verificationRequests = pgTable("verification_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  subjectType: text("subject_type").notNull(), // creator | brand
+  subjectId: uuid("subject_id").notNull(),
+  status: text("status").notNull().default("pending"),
+  reviewerNote: text("reviewer_note"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+});
+
+export const reports = pgTable("reports", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  reporterUserId: uuid("reporter_user_id").references(() => users.id, { onDelete: "set null" }),
+  targetType: text("target_type").notNull(),
+  targetId: uuid("target_id").notNull(),
+  reason: text("reason").notNull(),
+  status: text("status").notNull().default("open"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const notifications = pgTable("notifications", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull(),
+  title: text("title").notNull(),
+  body: text("body"),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const featureFlags = pgTable("feature_flags", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull().unique(),
+  enabled: boolean("enabled").notNull().default(false),
+  description: text("description"),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const appSettings = pgTable("app_settings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull().unique(),
+  value: jsonb("value").notNull().default({}),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const creatorProfilesRelations = relations(creatorProfiles, ({ one, many }) => ({
+  user: one(users, { fields: [creatorProfiles.userId], references: [users.id] }),
+  primaryNiche: one(niches, { fields: [creatorProfiles.primaryNicheId], references: [niches.id] }),
+  niches: many(creatorNiches),
+  socialAccounts: many(creatorSocialAccounts),
+  rateCards: many(creatorRateCards),
+  portfolioItems: many(creatorPortfolioItems),
+  brandExperiences: many(creatorBrandExperiences),
+  applications: many(campaignApplications),
+}));
+
+export const brandProfilesRelations = relations(brandProfiles, ({ one, many }) => ({
+  user: one(users, { fields: [brandProfiles.userId], references: [users.id] }),
+  campaigns: many(campaigns),
+  socialAccounts: many(brandSocialAccounts),
+}));
+
+export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
+  brand: one(brandProfiles, { fields: [campaigns.brandProfileId], references: [brandProfiles.id] }),
+  category: one(marketplaceCategories, { fields: [campaigns.categoryId], references: [marketplaceCategories.id] }),
+  niches: many(campaignNiches),
+  platforms: many(campaignPlatforms),
+  applications: many(campaignApplications),
+  invitations: many(campaignInvitations),
+}));
+
+export const campaignApplicationsRelations = relations(campaignApplications, ({ one }) => ({
+  campaign: one(campaigns, { fields: [campaignApplications.campaignId], references: [campaigns.id] }),
+  creator: one(creatorProfiles, { fields: [campaignApplications.creatorProfileId], references: [creatorProfiles.id] }),
 }));
