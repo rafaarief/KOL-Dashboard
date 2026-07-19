@@ -1,3 +1,6 @@
+// Touches the live DB on every request — never let Next.js try to statically prerender this at build time.
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
