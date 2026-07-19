@@ -163,7 +163,18 @@ const BUDGET_OPTIONS = [
   { budgetType: "negotiable", budgetPerCreator: null, budgetMin: null, budgetMax: null },
 ] as const;
 
-const SEED_DEMO_PASSWORD = process.env.SEED_DEMO_PASSWORD ?? "OpenCollab2026!";
+function requireSeedDemoPassword(): string {
+  const value = process.env.SEED_DEMO_PASSWORD;
+  if (!value) {
+    throw new Error(
+      "SEED_DEMO_PASSWORD is not set. This seed script creates real login credentials for " +
+        "admin@opencollab.id / creator.demo@opencollab.id / brand.demo@opencollab.id, so it " +
+        "refuses to fall back to a hardcoded default — set SEED_DEMO_PASSWORD in your shell " +
+        "or .env.local before running it."
+    );
+  }
+  return value;
+}
 
 async function main() {
   const connectionString = process.env.DATABASE_URL;
@@ -189,7 +200,7 @@ async function main() {
   const categories = await db.select().from(schema.marketplaceCategories);
 
   // --- demo accounts ---
-  const demoPasswordHash = await hash(SEED_DEMO_PASSWORD, 10);
+  const demoPasswordHash = await hash(requireSeedDemoPassword(), 10);
   const demoAccounts = [
     { email: "admin@opencollab.id", fullName: "OpenCollab Admin", role: "admin" },
     { email: "creator.demo@opencollab.id", fullName: "Demo Creator", role: "creator" },
