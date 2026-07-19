@@ -42,8 +42,8 @@ export default function SearchPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-semibold text-slate-100">Find TikTok creators</h1>
-      <p className="mt-2 text-sm text-slate-400">
+      <h1 className="text-2xl font-semibold text-slate-900">Find TikTok creators</h1>
+      <p className="mt-2 text-sm text-slate-500">
         Describe who you&apos;re looking for, in Indonesian or English — like you&apos;re briefing a sourcing specialist.
       </p>
 
@@ -53,9 +53,9 @@ export default function SearchPage() {
           onChange={(event) => setQuery(event.target.value)}
           placeholder="photobooth blok m"
           rows={3}
-          className="w-full resize-none rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-slate-100 outline-none focus:border-indigo-500"
+          className="w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-slate-900 outline-none focus:border-indigo-500"
         />
-        {error && <p className="mt-2 text-sm text-red-400">{error}</p>}
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
         <button
           type="submit"
           disabled={isSubmitting}
@@ -72,7 +72,7 @@ export default function SearchPage() {
             <button
               key={example}
               onClick={() => setQuery(example)}
-              className="rounded-full border border-slate-700 px-3 py-1 text-xs text-slate-300 hover:border-indigo-500 hover:text-indigo-300"
+              className="rounded-full border border-slate-300 px-3 py-1 text-xs text-slate-700 hover:border-indigo-500 hover:text-indigo-300"
               type="button"
             >
               {example}

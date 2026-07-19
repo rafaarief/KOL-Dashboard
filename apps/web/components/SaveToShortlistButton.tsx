@@ -48,19 +48,19 @@ export function SaveToShortlistButton({ creatorId, searchResultId }: { creatorId
       <button
         type="button"
         onClick={() => setIsOpen((open) => !open)}
-        className="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:border-indigo-500"
+        className="rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-800 hover:border-indigo-500"
       >
         {savedMessage ?? "Save Creator"}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-10 mt-1 w-48 rounded-md border border-slate-700 bg-slate-900 p-1 shadow-lg">
+        <div className="absolute right-0 z-10 mt-1 w-48 rounded-md border border-slate-300 bg-slate-50 p-1 shadow-lg">
           {shortlists.map((shortlist) => (
             <button
               key={shortlist.id}
               type="button"
               onClick={() => saveToShortlist(shortlist.id)}
-              className="block w-full rounded px-2 py-1 text-left text-xs text-slate-200 hover:bg-slate-800"
+              className="block w-full rounded px-2 py-1 text-left text-xs text-slate-800 hover:bg-slate-100"
             >
               {shortlist.name}
             </button>
@@ -68,7 +68,7 @@ export function SaveToShortlistButton({ creatorId, searchResultId }: { creatorId
           <button
             type="button"
             onClick={createShortlistAndSave}
-            className="block w-full rounded px-2 py-1 text-left text-xs text-indigo-400 hover:bg-slate-800"
+            className="block w-full rounded px-2 py-1 text-left text-xs text-indigo-600 hover:bg-slate-100"
           >
             + New shortlist
           </button>

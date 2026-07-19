@@ -43,35 +43,35 @@ export default function ShortlistsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-slate-100">Shortlists</h1>
+      <h1 className="text-xl font-semibold text-slate-900">Shortlists</h1>
 
       <form onSubmit={handleCreate} className="mt-6 flex flex-wrap gap-3">
         <input
           value={name}
           onChange={(event) => setName(event.target.value)}
           placeholder="Shortlist name"
-          className="rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-800"
         />
         <input
           value={clientName}
           onChange={(event) => setClientName(event.target.value)}
           placeholder="Client (optional)"
-          className="rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-800"
         />
         <button type="submit" className="rounded-md bg-indigo-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-indigo-500">
           Create shortlist
         </button>
       </form>
 
-      <div className="mt-6 divide-y divide-slate-800 rounded-xl border border-slate-800">
+      <div className="mt-6 divide-y divide-slate-200 rounded-xl border border-slate-200">
         {shortlists.map((shortlist) => (
           <Link
             key={shortlist.id}
             href={`/shortlists/${shortlist.id}`}
-            className="flex items-center justify-between px-4 py-3 hover:bg-slate-900"
+            className="flex items-center justify-between px-4 py-3 hover:bg-slate-50"
           >
             <div>
-              <p className="text-sm text-slate-100">{shortlist.name}</p>
+              <p className="text-sm text-slate-900">{shortlist.name}</p>
               <p className="text-xs text-slate-500">{shortlist.clientName ?? "No client set"}</p>
             </div>
             <p className="text-xs text-slate-500">{new Date(shortlist.createdAt).toLocaleDateString()}</p>

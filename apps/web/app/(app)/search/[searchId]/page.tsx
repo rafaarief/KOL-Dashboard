@@ -86,7 +86,7 @@ export default function SearchResultsPage() {
   }
 
   if (!search) {
-    return <p className="text-slate-400">Loading search...</p>;
+    return <p className="text-slate-500">Loading search...</p>;
   }
 
   const isRunning = !["completed", "failed", "cancelled"].includes(search.status);
@@ -95,8 +95,8 @@ export default function SearchResultsPage() {
     <div>
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-slate-100">&ldquo;{search.originalQuery}&rdquo;</h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <h1 className="text-xl font-semibold text-slate-900">&ldquo;{search.originalQuery}&rdquo;</h1>
+          <p className="mt-1 text-sm text-slate-500">
             {search.creatorCount} creators ranked · {search.qualifyingVideoCount} of {search.candidateVideoCount} candidate
             videos met the view threshold
             {search.errorCount > 0 ? ` · ${search.errorCount} steps failed but did not stop the search` : ""}
@@ -104,17 +104,17 @@ export default function SearchResultsPage() {
         </div>
         <a
           href={`/api/searches/${params.searchId}/export.csv`}
-          className="rounded-md border border-slate-700 px-3 py-1.5 text-xs text-slate-200 hover:border-indigo-500"
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-800 hover:border-indigo-500"
         >
           Export CSV
         </a>
       </div>
 
       {isRunning && (
-        <div className="mt-6 rounded-xl border border-slate-800 bg-slate-900 p-4">
+        <div className="mt-6 rounded-xl border border-slate-200 bg-slate-50 p-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-slate-300">{STEP_LABELS[search.progressStep ?? ""] ?? "Interpreting query"}</p>
-            <button onClick={handleCancel} className="text-xs text-slate-500 hover:text-red-400">
+            <p className="text-sm text-slate-700">{STEP_LABELS[search.progressStep ?? ""] ?? "Interpreting query"}</p>
+            <button onClick={handleCancel} className="text-xs text-slate-500 hover:text-red-600">
               Cancel search
             </button>
           </div>
@@ -122,7 +122,7 @@ export default function SearchResultsPage() {
             {PROGRESS_STEPS.map((step, index) => (
               <div
                 key={step}
-                className={`h-1.5 flex-1 rounded-full ${index <= activeStepIndex ? "bg-indigo-500" : "bg-slate-700"}`}
+                className={`h-1.5 flex-1 rounded-full ${index <= activeStepIndex ? "bg-indigo-500" : "bg-slate-200"}`}
               />
             ))}
           </div>
@@ -130,14 +130,14 @@ export default function SearchResultsPage() {
       )}
 
       {search.status === "failed" && (
-        <div className="mt-6 rounded-xl border border-red-900 bg-red-950/40 p-4 text-sm text-red-300">
+        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
           This search stopped early ({search.progressStep}). No CAPTCHA or access-control bypass was attempted — try again
           later or narrow the query.
         </div>
       )}
 
       <div className="mt-6 flex flex-wrap gap-3">
-        <select value={sort} onChange={(event) => setSort(event.target.value)} className="rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200">
+        <select value={sort} onChange={(event) => setSort(event.target.value)} className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-800">
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
@@ -148,18 +148,18 @@ export default function SearchResultsPage() {
           value={minimumScore}
           onChange={(event) => setMinimumScore(event.target.value)}
           placeholder="Min match %"
-          className="w-32 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="w-32 rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-800"
         />
         <input
           value={niche}
           onChange={(event) => setNiche(event.target.value)}
           placeholder="Niche"
-          className="w-48 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="w-48 rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-800"
         />
       </div>
 
       <div className="mt-6 space-y-4">
-        {results.length === 0 && !isRunning && <p className="text-slate-400">No creators matched yet. Try loosening the filters.</p>}
+        {results.length === 0 && !isRunning && <p className="text-slate-500">No creators matched yet. Try loosening the filters.</p>}
         {results.map((row) => (
           <CreatorCard key={row.result.id} row={row} />
         ))}

@@ -101,20 +101,20 @@ export default function KolsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-slate-100">Nano KOL directory</h1>
-      <p className="mt-1 text-sm text-slate-400">{total.toLocaleString()} curated nano creators (Blok M roster).</p>
+      <h1 className="text-xl font-semibold text-slate-900">Nano KOL directory</h1>
+      <p className="mt-1 text-sm text-slate-500">{total.toLocaleString()} curated nano creators (Blok M roster).</p>
 
       <div className="mt-6 flex flex-wrap gap-3">
         <input
           value={q}
           onChange={(event) => setQ(event.target.value)}
           placeholder="Search name, TikTok, Instagram, domisili"
-          className="w-72 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200 outline-none focus:border-indigo-500"
+          className="w-72 rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-800 outline-none focus:border-indigo-500"
         />
         <select
           value={category}
           onChange={(event) => setCategory(event.target.value)}
-          className="rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-800"
         >
           <option value="">All categories</option>
           {facets.categories.map((option) => (
@@ -126,7 +126,7 @@ export default function KolsPage() {
         <select
           value={domisili}
           onChange={(event) => setDomisili(event.target.value)}
-          className="rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-800"
         >
           <option value="">All domisili</option>
           {facets.domisili.map((option) => (
@@ -138,7 +138,7 @@ export default function KolsPage() {
         <select
           value={gender}
           onChange={(event) => setGender(event.target.value)}
-          className="rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-800"
         >
           <option value="">All genders</option>
           {facets.genders.map((option) => (
@@ -151,12 +151,12 @@ export default function KolsPage() {
           value={minTiktokFollowers}
           onChange={(event) => setMinTiktokFollowers(event.target.value)}
           placeholder="Min TikTok followers"
-          className="w-40 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="w-40 rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-800"
         />
         <select
           value={sort}
           onChange={(event) => setSort(event.target.value)}
-          className="rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-200"
+          className="rounded-md border border-slate-300 bg-slate-50 px-3 py-1.5 text-sm text-slate-800"
         >
           {SORT_OPTIONS.map((option) => (
             <option key={option.value} value={option.value}>
@@ -166,17 +166,17 @@ export default function KolsPage() {
         </select>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-300">
+      <div className="mt-3 flex flex-wrap gap-4 text-sm text-slate-700">
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={hasInstagram} onChange={(event) => setHasInstagram(event.target.checked)} />
           Has Instagram
         </label>
       </div>
 
-      <div className="mt-6 overflow-x-auto rounded-xl border border-slate-800">
+      <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200">
         <table className="w-full min-w-[1200px] text-left text-sm">
           <thead>
-            <tr className="border-b border-slate-800 bg-slate-900 text-xs uppercase tracking-wide text-slate-500">
+            <tr className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
               <th className="px-4 py-3">Name</th>
               <th className="px-4 py-3">Domisili</th>
               <th className="px-4 py-3">Categories</th>
@@ -188,10 +188,10 @@ export default function KolsPage() {
               <th className="px-4 py-3">Phone</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-800">
+          <tbody className="divide-y divide-slate-200">
             {rows.map((kol) => (
-              <tr key={kol.id} className="text-slate-300 hover:bg-slate-900/60">
-                <td className="px-4 py-3 text-slate-100">
+              <tr key={kol.id} className="text-slate-700 hover:bg-slate-50">
+                <td className="px-4 py-3 text-slate-900">
                   {kol.fullName ?? "—"}
                   {kol.age && <span className="ml-2 text-xs text-slate-500">{kol.age}</span>}
                 </td>
@@ -199,7 +199,7 @@ export default function KolsPage() {
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1">
                     {kol.categories.map((cat) => (
-                      <span key={cat} className="rounded-full border border-slate-700 px-2 py-0.5 text-xs text-slate-300">
+                      <span key={cat} className="rounded-full border border-slate-300 px-2 py-0.5 text-xs text-slate-700">
                         {cat}
                       </span>
                     ))}
@@ -207,7 +207,7 @@ export default function KolsPage() {
                 </td>
                 <td className="px-4 py-3">
                   {kol.tiktokUrl ? (
-                    <a href={kol.tiktokUrl} target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">
+                    <a href={kol.tiktokUrl} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">
                       @{kol.tiktokUsername}
                     </a>
                   ) : (
@@ -218,7 +218,7 @@ export default function KolsPage() {
                 <td className="px-4 py-3">{kol.erTiktokRaw ?? "—"}</td>
                 <td className="px-4 py-3">
                   {kol.instagramUrl ? (
-                    <a href={kol.instagramUrl} target="_blank" rel="noreferrer" className="text-indigo-400 hover:underline">
+                    <a href={kol.instagramUrl} target="_blank" rel="noreferrer" className="text-indigo-600 hover:underline">
                       @{kol.instagramUsername}
                     </a>
                   ) : (
@@ -240,7 +240,7 @@ export default function KolsPage() {
         </table>
       </div>
 
-      <div className="mt-4 flex items-center justify-between text-sm text-slate-400">
+      <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
         <span>
           Page {page} of {totalPages}
         </span>
@@ -249,7 +249,7 @@ export default function KolsPage() {
             type="button"
             disabled={page <= 1}
             onClick={() => setPage((current) => Math.max(1, current - 1))}
-            className="rounded-md border border-slate-700 px-3 py-1.5 disabled:opacity-40"
+            className="rounded-md border border-slate-300 px-3 py-1.5 disabled:opacity-40"
           >
             Previous
           </button>
@@ -257,7 +257,7 @@ export default function KolsPage() {
             type="button"
             disabled={page >= totalPages}
             onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-            className="rounded-md border border-slate-700 px-3 py-1.5 disabled:opacity-40"
+            className="rounded-md border border-slate-300 px-3 py-1.5 disabled:opacity-40"
           >
             Next
           </button>

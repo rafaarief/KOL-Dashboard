@@ -1,5 +1,4 @@
 import { eq } from "drizzle-orm";
-import { getSession } from "@/lib/auth";
 import { getDb, schema } from "@/lib/db";
 
 function csvEscape(value: unknown): string {
@@ -33,9 +32,6 @@ const COLUMNS = [
 
 /** FR-018 — CSV export (PRD section 8.12 / 12). */
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  const session = await getSession();
-  if (!session) return new Response("Unauthenticated", { status: 401 });
-
   const db = getDb();
 
   const rows = await db

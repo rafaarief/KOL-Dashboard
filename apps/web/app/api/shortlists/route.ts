@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
 import { desc } from "drizzle-orm";
 import { z } from "zod";
-import { getSession } from "@/lib/auth";
 import { getDb, schema } from "@/lib/db";
-import { getOrCreateUserId } from "@/lib/currentUser";
+import { getDefaultUserId } from "@/lib/currentUser";
 
 const createShortlistSchema = z.object({
   name: z.string().min(1),
@@ -13,9 +12,6 @@ const createShortlistSchema = z.object({
 });
 
 export async function GET() {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
-
   const db = getDb();
   const shortlists = await db.select().from(schema.shortlists).orderBy(desc(schema.shortlists.createdAt));
 
@@ -23,14 +19,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
-
   const body = await request.json().catch(() => null);
   const parsed = createShortlistSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
 
-  const userId = await getOrCreateUserId(session.email);
+  const userId = await getDefaultUserId();
   const db = getDb();
 
   const [shortlist] = await db

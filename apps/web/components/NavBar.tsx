@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/kols", label: "Nano KOLs" },
@@ -12,25 +12,18 @@ const LINKS = [
 
 export function NavBar() {
   const pathname = usePathname();
-  const router = useRouter();
-
-  async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    router.push("/login");
-    router.refresh();
-  }
 
   return (
-    <nav className="flex items-center justify-between border-b border-slate-800 bg-slate-950 px-6 py-4">
+    <nav className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
       <div className="flex items-center gap-8">
-        <span className="text-sm font-semibold tracking-wide text-slate-100">KOL FINDER</span>
+        <span className="text-sm font-semibold tracking-wide text-slate-900">KOL FINDER</span>
         <div className="flex gap-4">
           {LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
               className={`text-sm ${
-                pathname?.startsWith(link.href) ? "text-indigo-400" : "text-slate-400 hover:text-slate-200"
+                pathname?.startsWith(link.href) ? "text-indigo-600" : "text-slate-500 hover:text-slate-900"
               }`}
             >
               {link.label}
@@ -38,9 +31,6 @@ export function NavBar() {
           ))}
         </div>
       </div>
-      <button onClick={handleLogout} className="text-sm text-slate-400 hover:text-slate-200">
-        Sign out
-      </button>
     </nav>
   );
 }

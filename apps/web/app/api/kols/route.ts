@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { and, asc, desc, eq, gte, ilike, isNotNull, or, sql } from "drizzle-orm";
-import { getSession } from "@/lib/auth";
 import { getDb, schema } from "@/lib/db";
 
 const SORT_COLUMNS = {
@@ -11,9 +10,6 @@ const SORT_COLUMNS = {
 } as const;
 
 export async function GET(request: Request) {
-  const session = await getSession();
-  if (!session) return NextResponse.json({ error: "UNAUTHENTICATED" }, { status: 401 });
-
   const url = new URL(request.url);
   const q = url.searchParams.get("q");
   const category = url.searchParams.get("category");
