@@ -1,0 +1,67 @@
+export const dynamic = "force-dynamic";
+
+import { NextResponse } from "next/server";
+import { desc, eq } from "drizzle-orm";
+import { getDb, schema } from "@/lib/db";
+import { requireRole } from "@/lib/requireRole";
+
+export async function GET() {
+  const session = await requireRole(["admin"]);
+  if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+
+  const db = getDb();
+  const requests = await db
+    .select()
+    .from(schema.verificationRequests)
+    .orderBy(desc(schema.verificationRequests.createdAt))
+    .limit(100);
+
+  const enriched = await Promise.all(
+    requests.map(async (req) => {
+      if (req.subjectType === "creator") {
+        const [creator] = await db
+          .select({ name: schema.creatorProfiles.displayName, username: schema.creatorProfiles.username })
+          .from(schema.creatorProfiles)
+          .where(eq(schema.creatorProfiles.id, req.subjectId))
+          .limit(1);
+        return { ...req, subjectLabel: creator ? `${creator.name} (@${creator.username})` : "Unknown creator" };
+      }
+      const [brand] = await db
+        .select({ name: schema.brandProfiles.brandName })
+        .from(schema.brandProfiles)
+        .where(eq(schema.brandProfiles.id, req.subjectId))
+        .limit(1);
+      return { ...req, subjectLabel: brand ? brand.name : "Unknown brand" };
+    })
+  );
+
+  return NextResponse.json({ results: enriched });
+}
+
+export async function PATCH(request: Request) {
+  const session = await requireRole(["admin"]);
+  if (!session) return NextResponse.json({ error: "UNAUTHORIZED" }, { status: 401 });
+
+  const body = await request.json().catch(() => null);
+  const id = body?.id as string | undefined;
+  const decision = body?.decision as "approved" | "rejected" | undefined;
+  if (!id || !decision) return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
+
+  const db = getDb();
+  const [reqRow] = await db.select().from(schema.verificationRequests).where(eq(schema.verificationRequests.id, id)).limit(1);
+  if (!reqRow) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+
+  await db
+    .update(schema.verificationRequests)
+    .set({ status: decision, reviewedAt: new Date() })
+    .where(eq(schema.verificationRequests.id, id));
+
+  const newVerificationStatus = decision === "approved" ? "verified" : "rejected";
+  if (reqRow.subjectType === "creator") {
+    await db.update(schema.creatorProfiles).set({ verificationStatus: newVerificationStatus }).where(eq(schema.creatorProfiles.id, reqRow.subjectId));
+  } else {
+    await db.update(schema.brandProfiles).set({ verificationStatus: newVerificationStatus }).where(eq(schema.brandProfiles.id, reqRow.subjectId));
+  }
+
+  return NextResponse.json({ success: true });
+}
