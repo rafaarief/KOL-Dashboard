@@ -4,8 +4,9 @@ import type { Metadata } from "next";
 import { getDb, schema } from "@/lib/db";
 import { auth } from "@/auth";
 import { SaveButton } from "@/components/oc/SaveButton";
+import { ShareProfileButton } from "@/components/oc/ShareProfileButton";
 import { CreatorCard } from "@/components/oc/CreatorCard";
-import { Avatar, AvailabilityBadge, VerificationBadge, formatCompactNumber, formatIDR } from "@/components/oc/primitives";
+import { Avatar, AvailabilityBadge, CategoryChip, VerificationBadge, formatCompactNumber, formatIDR } from "@/components/oc/primitives";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +20,9 @@ async function loadCreator(username: string) {
       displayName: schema.creatorProfiles.displayName,
       city: schema.creatorProfiles.city,
       bio: schema.creatorProfiles.bio,
+      headline: schema.creatorProfiles.headline,
+      languages: schema.creatorProfiles.languages,
+      yearsOfExperience: schema.creatorProfiles.yearsOfExperience,
       avatarUrl: schema.creatorProfiles.avatarUrl,
       coverImageUrl: schema.creatorProfiles.coverImageUrl,
       availabilityStatus: schema.creatorProfiles.availabilityStatus,
@@ -36,6 +40,7 @@ async function loadCreator(username: string) {
       contactWhatsapp: schema.creatorProfiles.contactWhatsapp,
       contactVisible: schema.creatorProfiles.contactVisible,
       verificationStatus: schema.creatorProfiles.verificationStatus,
+      featured: schema.creatorProfiles.featured,
       status: schema.creatorProfiles.status,
       primaryNicheId: schema.creatorProfiles.primaryNicheId,
       primaryNicheName: schema.niches.name,
@@ -51,9 +56,30 @@ async function loadCreator(username: string) {
 export async function generateMetadata({ params }: { params: { username: string } }): Promise<Metadata> {
   const creator = await loadCreator(params.username);
   if (!creator) return { title: "Creator not found" };
+
+  const title = `${creator.displayName} (@${creator.username})`;
+  const description =
+    creator.headline || creator.bio || `${creator.displayName} is a creator on OpenCollab.id, Indonesia's professional network for creator collaborations.`;
+
+  const ogImage = `/api/og/creators/${creator.username}`;
+
   return {
-    title: `${creator.displayName} (@${creator.username})`,
-    description: creator.bio ?? `${creator.displayName}'s creator profile on OpenCollab.id`,
+    title,
+    description,
+    alternates: { canonical: `/creators/${creator.username}` },
+    openGraph: {
+      title,
+      description,
+      url: `/creators/${creator.username}`,
+      type: "profile",
+      images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [ogImage],
+    },
   };
 }
 
@@ -64,7 +90,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
   const db = getDb();
   const session = await auth();
 
-  const [socialAccounts, rateCards, portfolioItems, brandExperiences, similar, trackRecordRows] = await Promise.all([
+  const [socialAccounts, rateCards, portfolioItems, brandExperiences, contentCategories, similar, trackRecordRows] = await Promise.all([
     db
       .select({ id: schema.creatorSocialAccounts.id, platformName: schema.platforms.name, username: schema.creatorSocialAccounts.username, followerCount: schema.creatorSocialAccounts.followerCount, averageViews: schema.creatorSocialAccounts.averageViews, engagementRate: schema.creatorSocialAccounts.engagementRate, profileUrl: schema.creatorSocialAccounts.profileUrl })
       .from(schema.creatorSocialAccounts)
@@ -73,6 +99,11 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
     db.select().from(schema.creatorRateCards).where(eq(schema.creatorRateCards.creatorProfileId, creator.id)),
     db.select().from(schema.creatorPortfolioItems).where(eq(schema.creatorPortfolioItems.creatorProfileId, creator.id)),
     db.select().from(schema.creatorBrandExperiences).where(eq(schema.creatorBrandExperiences.creatorProfileId, creator.id)),
+    db
+      .select({ name: schema.niches.name })
+      .from(schema.creatorNiches)
+      .innerJoin(schema.niches, eq(schema.niches.id, schema.creatorNiches.nicheId))
+      .where(eq(schema.creatorNiches.creatorProfileId, creator.id)),
     creator.primaryNicheId
       ? db
           .select({
@@ -86,10 +117,13 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
             slotsRemaining: schema.creatorProfiles.slotsRemaining,
             monthlyCapacity: schema.creatorProfiles.monthlyCapacity,
             primaryNicheName: schema.niches.name,
+            featured: schema.creatorProfiles.featured,
             totalFollowers: sql<number>`(select coalesce(sum(csa.follower_count), 0) from creator_social_accounts csa where csa.creator_profile_id = creator_profiles.id)`,
+            lastLoginAt: schema.users.lastLoginAt,
           })
           .from(schema.creatorProfiles)
           .leftJoin(schema.niches, eq(schema.niches.id, schema.creatorProfiles.primaryNicheId))
+          .leftJoin(schema.users, eq(schema.users.id, schema.creatorProfiles.userId))
           .where(and(eq(schema.creatorProfiles.primaryNicheId, creator.primaryNicheId), ne(schema.creatorProfiles.id, creator.id), eq(schema.creatorProfiles.status, "active")))
           .limit(4)
       : Promise.resolve([]),
@@ -132,32 +166,88 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
     creator.acceptsAmbassador && "Brand Ambassador",
   ].filter(Boolean) as string[];
 
+  const headline =
+    creator.headline ||
+    [creator.primaryNicheName ? `${creator.primaryNicheName} Creator` : "Creator", creator.city, socialAccounts[0]?.platformName].filter(Boolean).join(" • ");
+
+  const languages = Array.isArray(creator.languages) ? (creator.languages as string[]) : [];
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: creator.displayName,
+    alternateName: creator.username,
+    description: headline,
+    address: creator.city ? { "@type": "PostalAddress", addressLocality: creator.city, addressCountry: "ID" } : undefined,
+    knowsLanguage: languages.length > 0 ? languages : undefined,
+    image: creator.avatarUrl ?? undefined,
+    sameAs: socialAccounts.map((a) => a.profileUrl).filter(Boolean),
+  };
+
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
+      {/* JSON.stringify does not escape "</" sequences, so a creator-controlled bio/headline
+          containing literal "</script>" could break out of this tag and inject arbitrary
+          HTML — escaping "<" defuses that without affecting the JSON-LD's validity. */}
+      {/* eslint-disable-next-line react/no-danger */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <div>
-        <div className="flex items-center gap-4">
-          <Avatar name={creator.displayName} url={creator.avatarUrl} size={72} />
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-xl font-bold text-oc-ink">{creator.displayName}</h1>
-              <VerificationBadge status={creator.verificationStatus} />
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-4">
+            <Avatar name={creator.displayName} url={creator.avatarUrl} size={72} />
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl font-bold text-oc-ink">{creator.displayName}</h1>
+                <VerificationBadge status={creator.verificationStatus} />
+                {creator.featured && (
+                  <span className="inline-flex items-center rounded-full bg-oc-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+                    ★ Featured
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-oc-ink-muted">
+                @{creator.username}
+                {creator.city ? ` · ${creator.city}` : ""}
+              </p>
+              <p className="mt-1 text-sm font-medium text-oc-700">{headline}</p>
             </div>
-            <p className="text-sm text-oc-ink-muted">
-              @{creator.username}
-              {creator.city ? ` · ${creator.city}` : ""}
-            </p>
-            <p className="mt-1 text-sm font-medium text-oc-700">
-              {[creator.primaryNicheName ? `${creator.primaryNicheName} Creator` : "Creator", creator.city, socialAccounts[0]?.platformName]
-                .filter(Boolean)
-                .join(" • ")}
-            </p>
           </div>
+          <ShareProfileButton username={creator.username} />
         </div>
 
         {creator.bio && (
           <section className="mt-6">
-            <h2 className="text-sm font-semibold text-oc-ink">About</h2>
+            <h2 className="text-sm font-semibold text-oc-ink">Professional Summary</h2>
             <p className="mt-2 text-sm text-oc-ink-muted">{creator.bio}</p>
+          </section>
+        )}
+
+        {(contentCategories.length > 0 || languages.length > 0 || creator.yearsOfExperience) && (
+          <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {contentCategories.length > 0 && (
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-oc-ink-muted">Content Categories</h2>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {contentCategories.map((c) => (
+                    <CategoryChip key={c.name}>{c.name}</CategoryChip>
+                  ))}
+                </div>
+              </div>
+            )}
+            {languages.length > 0 && (
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-oc-ink-muted">Languages</h2>
+                <p className="mt-2 text-sm text-oc-ink">{languages.join(", ")}</p>
+              </div>
+            )}
+            {creator.yearsOfExperience !== null && (
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-wide text-oc-ink-muted">Experience</h2>
+                <p className="mt-2 text-sm text-oc-ink">
+                  {creator.yearsOfExperience} {creator.yearsOfExperience === 1 ? "year" : "years"} creating content
+                </p>
+              </div>
+            )}
           </section>
         )}
 
@@ -187,7 +277,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
               </div>
               <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
                 <p className="text-lg font-semibold text-oc-ink">{trackRecord.accepted}</p>
-                <p className="text-xs text-oc-ink-muted">Accepted Collaborations</p>
+                <p className="text-xs text-oc-ink-muted">Completed Collaborations</p>
               </div>
               <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
                 <p className="text-lg font-semibold text-oc-ink">{avgResponseDays !== null ? `~${avgResponseDays}d` : "—"}</p>
@@ -257,7 +347,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
 
         {brandExperiences.length > 0 && (
           <section className="mt-6">
-            <h2 className="text-sm font-semibold text-oc-ink">Past Brand Collaborations</h2>
+            <h2 className="text-sm font-semibold text-oc-ink">Brand Experience</h2>
             <ul className="mt-2 space-y-1 text-sm text-oc-ink-muted">
               {brandExperiences.map((exp) => (
                 <li key={exp.id}>

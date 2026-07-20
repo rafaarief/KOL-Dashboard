@@ -1,4 +1,4 @@
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -7,6 +7,7 @@ import { auth } from "@/auth";
 import { ApplyForm } from "@/components/oc/ApplyForm";
 import { SaveButton } from "@/components/oc/SaveButton";
 import { CampaignCard } from "@/components/oc/CampaignCard";
+import { ShareCampaignButton } from "@/components/oc/ShareProfileButton";
 import { Avatar, CampaignStatusBadge, VerificationBadge, formatIDR } from "@/components/oc/primitives";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +17,7 @@ async function loadCampaign(slug: string) {
   const [campaign] = await db
     .select({
       id: schema.campaigns.id,
+      brandProfileId: schema.campaigns.brandProfileId,
       title: schema.campaigns.title,
       slug: schema.campaigns.slug,
       shortDescription: schema.campaigns.shortDescription,
@@ -35,6 +37,7 @@ async function loadCampaign(slug: string) {
       creatorCountAccepted: schema.campaigns.creatorCountAccepted,
       applicationDeadline: schema.campaigns.applicationDeadline,
       contentDeadline: schema.campaigns.contentDeadline,
+      publishedAt: schema.campaigns.publishedAt,
       campaignStartDate: schema.campaigns.campaignStartDate,
       campaignEndDate: schema.campaigns.campaignEndDate,
       categoryId: schema.campaigns.categoryId,
@@ -57,10 +60,26 @@ async function loadCampaign(slug: string) {
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const campaign = await loadCampaign(params.slug);
   if (!campaign) return { title: "Campaign not found" };
+
+  const ogImage = `/api/og/campaigns/${campaign.slug}`;
+
   return {
     title: campaign.title,
     description: campaign.shortDescription,
-    openGraph: { title: campaign.title, description: campaign.shortDescription },
+    alternates: { canonical: `/campaigns/${campaign.slug}` },
+    openGraph: {
+      title: campaign.title,
+      description: campaign.shortDescription,
+      url: `/campaigns/${campaign.slug}`,
+      type: "website",
+      images: [{ url: ogImage, width: 1200, height: 630, alt: campaign.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: campaign.title,
+      description: campaign.shortDescription,
+      images: [ogImage],
+    },
   };
 }
 
@@ -101,6 +120,18 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
     }
   }
 
+  const [brandTrust] = (await db.execute(
+    sql`select
+          count(distinct c.id) filter (where c.status in ('published','filled','closed'))::int as "campaignsPosted",
+          count(distinct ca.creator_profile_id) filter (where ca.status = 'accepted')::int as "creatorsHired",
+          count(ca.id)::int as "totalApplications",
+          count(ca.id) filter (where ca.status <> 'submitted')::int as "reviewedApplications"
+        from campaigns c
+        left join campaign_applications ca on ca.campaign_id = c.id
+        where c.brand_profile_id = ${campaign.brandProfileId}`
+  )) as unknown as { campaignsPosted: number; creatorsHired: number; totalApplications: number; reviewedApplications: number }[];
+  const brandReviewRate = brandTrust?.totalApplications ? Math.round((brandTrust.reviewedApplications / brandTrust.totalApplications) * 100) : null;
+
   const similarRaw = campaign.categoryId
     ? await db
         .select({
@@ -136,15 +167,42 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
   const deadlinePassed = Boolean(campaign.applicationDeadline && new Date(campaign.applicationDeadline) < new Date());
   const deliverables = Array.isArray(campaign.deliverables) ? (campaign.deliverables as string[]) : [];
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "JobPosting",
+    title: campaign.title,
+    description: campaign.fullDescription,
+    datePosted: campaign.publishedAt ?? undefined,
+    validThrough: campaign.applicationDeadline ?? undefined,
+    employmentType: "CONTRACTOR",
+    hiringOrganization: { "@type": "Organization", name: campaign.brandName },
+    jobLocationType: campaign.isRemote ? "TELECOMMUTE" : undefined,
+    applicantLocationRequirements: campaign.isRemote ? { "@type": "Country", name: "ID" } : undefined,
+    jobLocation: !campaign.isRemote && campaign.city ? { "@type": "Place", address: { "@type": "PostalAddress", addressLocality: campaign.city, addressCountry: "ID" } } : undefined,
+    baseSalary:
+      campaign.budgetPerCreator || campaign.budgetMin
+        ? {
+            "@type": "MonetaryAmount",
+            currency: "IDR",
+            value: { "@type": "QuantitativeValue", value: campaign.budgetPerCreator ?? campaign.budgetMin, unitText: "MONTH" },
+          }
+        : undefined,
+  };
+
   return (
     <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_360px]">
+      {/* eslint-disable-next-line react/no-danger */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <div>
-        <div className="flex items-center gap-2">
-          <Avatar name={campaign.brandName} url={campaign.brandLogoUrl} size={32} />
-          <Link href={`/brands/${campaign.brandSlug}`} className="text-sm font-medium text-oc-ink hover:underline">
-            {campaign.brandName}
-          </Link>
-          <VerificationBadge status={campaign.brandVerification} />
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Avatar name={campaign.brandName} url={campaign.brandLogoUrl} size={32} />
+            <Link href={`/brands/${campaign.brandSlug}`} className="text-sm font-medium text-oc-ink hover:underline">
+              {campaign.brandName}
+            </Link>
+            <VerificationBadge status={campaign.brandVerification} />
+          </div>
+          <ShareCampaignButton slug={campaign.slug} variant="link" />
         </div>
 
         <h1 className="mt-3 text-2xl font-bold text-oc-ink">{campaign.title}</h1>
@@ -256,6 +314,35 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
               <SaveButton endpoint="/api/creator/saved-campaigns" targetId={campaign.id} initialSaved={alreadySaved} label="Save Campaign" />
             </div>
           )}
+        </div>
+
+        <div className="mt-4 rounded-oc-lg border border-oc-border bg-oc-card p-6 shadow-sm">
+          <div className="flex items-center gap-2">
+            <Avatar name={campaign.brandName} url={campaign.brandLogoUrl} size={32} />
+            <div>
+              <p className="text-sm font-medium text-oc-ink">{campaign.brandName}</p>
+              <VerificationBadge status={campaign.brandVerification} />
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-2 gap-3 text-center text-xs">
+            <div>
+              <p className="text-base font-semibold text-oc-ink">{brandTrust?.campaignsPosted ?? 0}</p>
+              <p className="text-oc-ink-muted">Campaigns Posted</p>
+            </div>
+            <div>
+              <p className="text-base font-semibold text-oc-ink">{brandTrust?.creatorsHired ?? 0}</p>
+              <p className="text-oc-ink-muted">Creators Hired</p>
+            </div>
+            <div>
+              <p className="text-base font-semibold text-oc-ink">{brandReviewRate !== null ? `${brandReviewRate}%` : "—"}</p>
+              <p className="text-oc-ink-muted">Applications Reviewed</p>
+            </div>
+            <div>
+              <Link href={`/brands/${campaign.brandSlug}`} className="text-oc-700 hover:underline">
+                View brand →
+              </Link>
+            </div>
+          </div>
         </div>
       </aside>
     </div>

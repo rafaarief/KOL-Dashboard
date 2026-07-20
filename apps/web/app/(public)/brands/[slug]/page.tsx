@@ -16,7 +16,17 @@ async function loadBrand(slug: string) {
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const brand = await loadBrand(params.slug);
   if (!brand) return { title: "Brand not found" };
-  return { title: brand.brandName, description: brand.description ?? `${brand.brandName} on OpenCollab.id` };
+
+  const title = brand.brandName;
+  const description = brand.description || `${brand.brandName} is a brand on OpenCollab.id, Indonesia's professional network for creator collaborations.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/brands/${brand.slug}` },
+    openGraph: { title, description, url: `/brands/${brand.slug}`, type: "website" },
+    twitter: { card: "summary", title, description },
+  };
 }
 
 export default async function BrandProfilePage({ params }: { params: { slug: string } }) {
@@ -51,15 +61,43 @@ export default async function BrandProfilePage({ params }: { params: { slug: str
   const activeCampaigns = campaignRows.filter((c) => c.status === "published");
   const pastCampaigns = campaignRows.filter((c) => c.status !== "published");
 
-  const [{ creatorsHired }] = await db.execute(
+  const [{ creatorsHired }] = (await db.execute(
     sql`select count(distinct ca.creator_profile_id)::int as "creatorsHired"
         from campaign_applications ca
         join campaigns c on c.id = ca.campaign_id
         where c.brand_profile_id = ${brand.id} and ca.status = 'accepted'`
-  ) as unknown as { creatorsHired: number }[];
+  )) as unknown as { creatorsHired: number }[];
+
+  // Real trust signals, not fabricated — derived from this brand's own applicant review
+  // activity: how often they actually review applications (vs leaving creators on read),
+  // and how quickly.
+  const [responsiveness] = (await db.execute(
+    sql`select
+          count(*)::int as total,
+          count(*) filter (where status <> 'submitted')::int as reviewed,
+          avg(extract(epoch from (updated_at - created_at)) / 86400) filter (where status <> 'submitted') as avg_response_days
+        from campaign_applications ca
+        join campaigns c on c.id = ca.campaign_id
+        where c.brand_profile_id = ${brand.id}`
+  )) as unknown as { total: number; reviewed: number; avg_response_days: string | null }[];
+
+  const reviewRate = responsiveness?.total ? Math.round((responsiveness.reviewed / responsiveness.total) * 100) : null;
+  const avgResponseDays = responsiveness?.avg_response_days ? Math.round(Number(responsiveness.avg_response_days) * 10) / 10 : null;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: brand.brandName,
+    description: brand.description ?? undefined,
+    url: brand.website ?? undefined,
+    logo: brand.logoUrl ?? undefined,
+    address: brand.city ? { "@type": "PostalAddress", addressLocality: brand.city, addressCountry: "ID" } : undefined,
+  };
 
   return (
     <div>
+      {/* eslint-disable-next-line react/no-danger */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <div className="flex items-center gap-4">
         <Avatar name={brand.brandName} url={brand.logoUrl} size={72} />
         <div>
@@ -81,7 +119,7 @@ export default async function BrandProfilePage({ params }: { params: { slug: str
         </section>
       )}
 
-      <div className="mt-6 grid grid-cols-3 gap-3">
+      <div className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-5">
         <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
           <p className="text-lg font-semibold text-oc-ink">{activeCampaigns.length}</p>
           <p className="text-xs text-oc-ink-muted">Active Campaigns</p>
@@ -93,6 +131,14 @@ export default async function BrandProfilePage({ params }: { params: { slug: str
         <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
           <p className="text-lg font-semibold text-oc-ink">{Number(creatorsHired ?? 0)}</p>
           <p className="text-xs text-oc-ink-muted">Creators Hired</p>
+        </div>
+        <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+          <p className="text-lg font-semibold text-oc-ink">{reviewRate !== null ? `${reviewRate}%` : "—"}</p>
+          <p className="text-xs text-oc-ink-muted">Applications Reviewed</p>
+        </div>
+        <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+          <p className="text-lg font-semibold text-oc-ink">{avgResponseDays !== null ? `~${avgResponseDays}d` : "—"}</p>
+          <p className="text-xs text-oc-ink-muted">Avg. Response Time</p>
         </div>
       </div>
 
