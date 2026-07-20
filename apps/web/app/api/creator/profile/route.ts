@@ -22,14 +22,23 @@ export async function GET() {
 
   const niches = await db.select().from(schema.niches);
 
-  return NextResponse.json({ profile, socialAccounts, niches });
+  const secondaryNiches = await db
+    .select({ nicheId: schema.creatorNiches.nicheId })
+    .from(schema.creatorNiches)
+    .where(eq(schema.creatorNiches.creatorProfileId, profile.id));
+
+  return NextResponse.json({ profile, socialAccounts, niches, secondaryNicheIds: secondaryNiches.map((n) => n.nicheId) });
 }
 
 const patchSchema = z.object({
   displayName: z.string().min(1).optional(),
   city: z.string().optional(),
   bio: z.string().optional(),
+  headline: z.string().max(120).optional(),
+  languages: z.array(z.string()).optional(),
+  yearsOfExperience: z.number().int().min(0).max(60).optional(),
   primaryNicheId: z.string().uuid().optional(),
+  secondaryNicheIds: z.array(z.string().uuid()).max(5).optional(),
   availabilityStatus: z.enum(["open", "limited", "fully_booked", "unavailable"]).optional(),
   monthlyCapacity: z.number().int().nonnegative().optional(),
   slotsRemaining: z.number().int().nonnegative().optional(),
@@ -52,11 +61,33 @@ export async function PATCH(request: Request) {
   const parsed = patchSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "INVALID_INPUT", details: parsed.error.flatten() }, { status: 400 });
 
+  const { secondaryNicheIds, ...profileFields } = parsed.data;
   const db = getDb();
-  await db
-    .update(schema.creatorProfiles)
-    .set({ ...parsed.data, updatedAt: new Date() })
-    .where(eq(schema.creatorProfiles.userId, session.user.id));
+
+  const [profile] = await db
+    .select({ id: schema.creatorProfiles.id, primaryNicheId: schema.creatorProfiles.primaryNicheId })
+    .from(schema.creatorProfiles)
+    .where(eq(schema.creatorProfiles.userId, session.user.id))
+    .limit(1);
+  if (!profile) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+
+  if (Object.keys(profileFields).length > 0) {
+    await db
+      .update(schema.creatorProfiles)
+      .set({ ...profileFields, updatedAt: new Date() })
+      .where(eq(schema.creatorProfiles.id, profile.id));
+  }
+
+  if (secondaryNicheIds) {
+    // Small, bounded set (max 5) — replace-all is simpler and safer than diffing, and this
+    // is a low-frequency write (profile editing, not a hot path).
+    const effectivePrimaryNicheId = parsed.data.primaryNicheId ?? profile.primaryNicheId;
+    await db.delete(schema.creatorNiches).where(eq(schema.creatorNiches.creatorProfileId, profile.id));
+    const uniqueIds = [...new Set(secondaryNicheIds)].filter((id) => id !== effectivePrimaryNicheId);
+    if (uniqueIds.length > 0) {
+      await db.insert(schema.creatorNiches).values(uniqueIds.map((nicheId) => ({ creatorProfileId: profile.id, nicheId })));
+    }
+  }
 
   return NextResponse.json({ success: true });
 }

@@ -436,6 +436,12 @@ export const creatorProfiles = pgTable(
     displayName: text("display_name").notNull(),
     city: text("city"),
     bio: text("bio"),
+    // Self-reported, not auto-generated from other fields — a creator-owned professional
+    // headline reads as more credible than something we synthesized for them. Public profile
+    // falls back to a synthesized "{niche} Creator • {city}" string when this is empty.
+    headline: text("headline"),
+    languages: jsonb("languages").notNull().default([]),
+    yearsOfExperience: integer("years_of_experience"),
     avatarUrl: text("avatar_url"),
     coverImageUrl: text("cover_image_url"),
     primaryNicheId: uuid("primary_niche_id").references(() => niches.id),
