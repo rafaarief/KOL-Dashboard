@@ -122,6 +122,7 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
           brandName: schema.brandProfiles.brandName,
           brandLogoUrl: schema.brandProfiles.logoUrl,
           brandVerification: schema.brandProfiles.verificationStatus,
+          featured: schema.campaigns.featured,
         })
         .from(schema.campaigns)
         .innerJoin(schema.brandProfiles, eq(schema.brandProfiles.id, schema.campaigns.brandProfileId))
@@ -132,6 +133,7 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
     : [];
 
   const slotsRemaining = Math.max(0, campaign.creatorCountNeeded - campaign.creatorCountAccepted);
+  const deadlinePassed = Boolean(campaign.applicationDeadline && new Date(campaign.applicationDeadline) < new Date());
   const deliverables = Array.isArray(campaign.deliverables) ? (campaign.deliverables as string[]) : [];
 
   return (
@@ -228,7 +230,15 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
           </p>
 
           <div className="mt-4">
-            {!session ? (
+            {deadlinePassed ? (
+              <p className="rounded-oc border border-oc-border bg-oc-bg p-3 text-xs text-oc-ink-muted">
+                The application deadline for this campaign has passed.
+              </p>
+            ) : slotsRemaining <= 0 ? (
+              <p className="rounded-oc border border-oc-border bg-oc-bg p-3 text-xs text-oc-ink-muted">
+                This campaign has filled all of its creator slots.
+              </p>
+            ) : !session ? (
               <Link href={`/login?next=/campaigns/${campaign.slug}`} className="block w-full rounded-oc-input bg-oc-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-oc-700">
                 Log in to Apply
               </Link>

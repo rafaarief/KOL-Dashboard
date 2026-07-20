@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { requireRole } from "@/lib/requireRole";
 
@@ -61,10 +61,23 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   }
 
   const db = getDb();
-  await db
+  // A withdrawn application is off-limits to brand actions — the creator pulled out, so it
+  // shouldn't be shortlistable/acceptable/rejectable back into an active state.
+  const [updated] = await db
     .update(schema.campaignApplications)
     .set({ status, updatedAt: new Date() })
-    .where(and(eq(schema.campaignApplications.id, applicationId), eq(schema.campaignApplications.campaignId, params.id)));
+    .where(
+      and(
+        eq(schema.campaignApplications.id, applicationId),
+        eq(schema.campaignApplications.campaignId, params.id),
+        ne(schema.campaignApplications.status, "withdrawn")
+      )
+    )
+    .returning({ id: schema.campaignApplications.id });
+
+  if (!updated) {
+    return NextResponse.json({ error: "INVALID_TRANSITION" }, { status: 409 });
+  }
 
   // Recompute from the source of truth rather than incrementing, so re-triggering this
   // action (or un-accepting elsewhere) can never double-count.

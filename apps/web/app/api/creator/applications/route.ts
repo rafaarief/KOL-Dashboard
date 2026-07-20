@@ -63,6 +63,19 @@ export async function POST(request: Request) {
 
   const db = getDb();
 
+  const [campaign] = await db
+    .select({ status: schema.campaigns.status, applicationDeadline: schema.campaigns.applicationDeadline })
+    .from(schema.campaigns)
+    .where(eq(schema.campaigns.id, parsed.data.campaignId))
+    .limit(1);
+
+  if (!campaign || campaign.status !== "published") {
+    return NextResponse.json({ error: "CAMPAIGN_NOT_OPEN" }, { status: 400 });
+  }
+  if (campaign.applicationDeadline && new Date(campaign.applicationDeadline) < new Date()) {
+    return NextResponse.json({ error: "APPLICATION_DEADLINE_PASSED" }, { status: 400 });
+  }
+
   try {
     await db.insert(schema.campaignApplications).values({
       campaignId: parsed.data.campaignId,
