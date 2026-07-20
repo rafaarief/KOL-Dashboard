@@ -60,7 +60,14 @@ export default function CreatorRatesPage() {
             </button>
           </div>
         ))}
-        {rates.length === 0 && <p className="px-4 py-6 text-sm text-oc-ink-muted">No rates added yet.</p>}
+        {rates.length === 0 && (
+          <div className="px-4 py-8 text-center text-sm text-oc-ink-muted">
+            <p className="font-medium text-oc-ink">Your rate card is empty.</p>
+            <p className="mx-auto mt-1 max-w-sm text-xs">
+              A transparent rate card is the #1 thing brands look for — it tells them upfront whether you fit their budget, so they reach out instead of scrolling past.
+            </p>
+          </div>
+        )}
       </OcCard>
 
       <form onSubmit={handleAdd} className="mt-4 space-y-3 rounded-oc border border-oc-border bg-oc-card p-4">

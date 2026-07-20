@@ -49,7 +49,12 @@ export default function CreatorSavedCampaignsPage() {
             </div>
           </div>
         ))}
-        {rows.length === 0 && <p className="px-4 py-6 text-sm text-oc-ink-muted">No saved campaigns yet.</p>}
+        {rows.length === 0 && (
+          <div className="px-4 py-8 text-center text-sm text-oc-ink-muted">
+            <p className="font-medium text-oc-ink">You haven&apos;t saved any campaigns.</p>
+            <p className="mx-auto mt-1 max-w-sm text-xs">Save campaigns while browsing to come back to them later without losing your place.</p>
+          </div>
+        )}
       </OcCard>
     </div>
   );

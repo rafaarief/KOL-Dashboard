@@ -26,7 +26,7 @@ export default function BrandApplicantsPage() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-oc-ink">All Applicants</h1>
+      <h1 className="text-lg font-semibold text-oc-ink">All Collaboration Applicants</h1>
       <p className="mt-1 text-sm text-oc-ink-muted">Across every campaign you&apos;ve posted.</p>
 
       <OcCard className="mt-4 overflow-x-auto">
@@ -64,8 +64,14 @@ export default function BrandApplicantsPage() {
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-oc-ink-muted">
-                  No applicants yet.
+                <td colSpan={6} className="px-4 py-8 text-center text-oc-ink-muted">
+                  <p className="font-medium text-oc-ink">No applicants yet.</p>
+                  <p className="mx-auto mt-1 max-w-sm text-xs">
+                    Once your campaigns are published, creators who match your requirements can apply here. You can also browse and directly invite creators instead of waiting.
+                  </p>
+                  <a href="/creators" className="mt-3 inline-block rounded-oc-input border border-oc-600 px-4 py-2 text-xs font-medium text-oc-600 hover:bg-oc-300/10">
+                    Browse Creators
+                  </a>
                 </td>
               </tr>
             )}

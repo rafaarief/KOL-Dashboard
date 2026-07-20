@@ -33,7 +33,7 @@ export default function CreatorApplicationsPage() {
 
   return (
     <div>
-      <h1 className="text-lg font-semibold text-oc-ink">Your Applications</h1>
+      <h1 className="text-lg font-semibold text-oc-ink">Your Collaboration Applications</h1>
 
       <OcCard className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[700px] text-left text-sm">
@@ -72,8 +72,14 @@ export default function CreatorApplicationsPage() {
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-oc-ink-muted">
-                  You haven&apos;t applied to any campaigns yet.
+                <td colSpan={6} className="px-4 py-8 text-center text-oc-ink-muted">
+                  <p className="font-medium text-oc-ink">You haven&apos;t applied to any collaborations yet.</p>
+                  <p className="mx-auto mt-1 max-w-sm text-xs">
+                    Creators with a complete profile — rate card, portfolio, and availability set — get shortlisted far more often. Browse open campaigns and apply to ones that fit your niche.
+                  </p>
+                  <a href="/campaigns" className="mt-3 inline-block rounded-oc-input bg-oc-600 px-4 py-2 text-xs font-medium text-white hover:bg-oc-700">
+                    Browse Campaigns
+                  </a>
                 </td>
               </tr>
             )}

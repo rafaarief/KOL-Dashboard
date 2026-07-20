@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DashboardTabs } from "@/components/oc/DashboardTabs";
 
-export const metadata: Metadata = { title: "Brand Dashboard", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Brand Workspace", robots: { index: false, follow: false } };
 
 const TABS = [
   { href: "/dashboard/brand", label: "Overview", exact: true },
-  { href: "/dashboard/brand/profile", label: "Profile" },
+  { href: "/dashboard/brand/profile", label: "Brand Profile" },
   { href: "/dashboard/brand/campaigns", label: "Campaigns" },
-  { href: "/dashboard/brand/applicants", label: "Applicants" },
+  { href: "/dashboard/brand/applicants", label: "Collaboration Applicants" },
   { href: "/dashboard/brand/saved-creators", label: "Saved Creators" },
   { href: "/dashboard/brand/settings", label: "Settings" },
 ];

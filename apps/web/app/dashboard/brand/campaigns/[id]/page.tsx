@@ -216,7 +216,12 @@ export default function BrandCampaignDetailPage() {
         {visibleApplicants.length === 0 && applicants.length > 0 && (
           <p className="text-sm text-oc-ink-muted">No applicants match these filters.</p>
         )}
-        {applicants.length === 0 && <p className="text-sm text-oc-ink-muted">No applicants yet.</p>}
+        {applicants.length === 0 && (
+          <div className="rounded-oc border border-dashed border-oc-border bg-oc-bg px-6 py-8 text-center text-sm text-oc-ink-muted">
+            <p className="font-medium text-oc-ink">No applicants yet.</p>
+            <p className="mx-auto mt-1 max-w-sm text-xs">Once published, this campaign will start collecting applications from matching creators. Share it directly for faster results.</p>
+          </div>
+        )}
       </div>
     </div>
   );

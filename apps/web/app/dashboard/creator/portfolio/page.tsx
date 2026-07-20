@@ -59,7 +59,14 @@ export default function CreatorPortfolioPage() {
             </button>
           </div>
         ))}
-        {items.length === 0 && <p className="px-4 py-6 text-sm text-oc-ink-muted">No portfolio items added yet.</p>}
+        {items.length === 0 && (
+          <div className="px-4 py-8 text-center text-sm text-oc-ink-muted">
+            <p className="font-medium text-oc-ink">Your portfolio is empty.</p>
+            <p className="mx-auto mt-1 max-w-sm text-xs">
+              Add 2–3 of your best collaborations or content pieces. This replaces the Google Drive link or PDF media kit you&apos;d otherwise have to send brands one by one.
+            </p>
+          </div>
+        )}
       </OcCard>
 
       <form onSubmit={handleAdd} className="mt-4 space-y-3 rounded-oc border border-oc-border bg-oc-card p-4">

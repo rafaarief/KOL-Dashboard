@@ -164,6 +164,15 @@ export default async function CreatorOverviewPage() {
       </div>
 
       <div className="mt-8 flex flex-wrap gap-3">
+        {completionPercent < 100 ? (
+          <Link href="/dashboard/creator/profile" className="rounded-oc-input bg-oc-600 px-4 py-2 text-sm font-medium text-white hover:bg-oc-700">
+            Complete your profile
+          </Link>
+        ) : (
+          <Link href="/campaigns" className="rounded-oc-input bg-oc-600 px-4 py-2 text-sm font-medium text-white hover:bg-oc-700">
+            Browse campaigns
+          </Link>
+        )}
         <Link href="/dashboard/creator/availability" className="rounded-oc-input border border-oc-border bg-oc-card px-4 py-2 text-sm hover:bg-oc-bg">
           Update availability
         </Link>
@@ -172,9 +181,6 @@ export default async function CreatorOverviewPage() {
         </Link>
         <Link href="/dashboard/creator/rates" className="rounded-oc-input border border-oc-border bg-oc-card px-4 py-2 text-sm hover:bg-oc-bg">
           Edit rate card
-        </Link>
-        <Link href="/campaigns" className="rounded-oc-input bg-oc-600 px-4 py-2 text-sm font-medium text-white hover:bg-oc-700">
-          Browse campaigns
         </Link>
       </div>
     </div>
