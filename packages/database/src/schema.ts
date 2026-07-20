@@ -462,6 +462,7 @@ export const creatorProfiles = pgTable(
   (table) => ({
     availabilityIdx: index("creator_profiles_availability_idx").on(table.availabilityStatus),
     nicheIdx: index("creator_profiles_niche_idx").on(table.primaryNicheId),
+    statusIdx: index("creator_profiles_status_idx").on(table.status),
   })
 );
 
@@ -567,6 +568,7 @@ export const brandProfiles = pgTable(
   },
   (table) => ({
     industryIdx: index("brand_profiles_industry_idx").on(table.industry),
+    statusIdx: index("brand_profiles_status_idx").on(table.status),
   })
 );
 
@@ -686,6 +688,7 @@ export const campaignApplications = pgTable(
     uniqueApplication: uniqueIndex("campaign_applications_unique_idx").on(table.campaignId, table.creatorProfileId),
     campaignIdx: index("campaign_applications_campaign_idx").on(table.campaignId),
     creatorIdx: index("campaign_applications_creator_idx").on(table.creatorProfileId),
+    statusIdx: index("campaign_applications_status_idx").on(table.status),
   })
 );
 
