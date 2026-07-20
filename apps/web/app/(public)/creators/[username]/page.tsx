@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import { SaveButton } from "@/components/oc/SaveButton";
 import { ShareProfileButton } from "@/components/oc/ShareProfileButton";
 import { CreatorCard } from "@/components/oc/CreatorCard";
-import { Avatar, AvailabilityBadge, CategoryChip, VerificationBadge, formatCompactNumber, formatIDR } from "@/components/oc/primitives";
+import { Avatar, AvailabilityBadge, CategoryChip, VerificationBadge, formatCompactNumber, formatIDR, tileForSeed } from "@/components/oc/primitives";
 
 export const dynamic = "force-dynamic";
 
@@ -192,12 +192,15 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
       {/* eslint-disable-next-line react/no-danger */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <div>
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-center gap-4">
-            <Avatar name={creator.displayName} url={creator.avatarUrl} size={72} />
-            <div>
+        <div className={`h-24 rounded-oc-lg ${tileForSeed(creator.username)}`} aria-hidden="true" />
+        <div className="-mt-10 flex items-start justify-between gap-3 px-2">
+          <div className="flex items-end gap-4">
+            <div className="rounded-full ring-4 ring-oc-bg">
+              <Avatar name={creator.displayName} url={creator.avatarUrl} size={80} />
+            </div>
+            <div className="pb-1">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold text-oc-ink">{creator.displayName}</h1>
+                <h1 className="font-display text-xl font-extrabold text-oc-ink">{creator.displayName}</h1>
                 <VerificationBadge status={creator.verificationStatus} />
                 {creator.featured && (
                   <span className="inline-flex items-center rounded-full bg-oc-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
@@ -254,12 +257,12 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
         <section className="mt-6">
           <h2 className="text-sm font-semibold text-oc-ink">Creator Statistics</h2>
           <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+            <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center shadow-oc-sm">
               <p className="text-lg font-semibold text-oc-ink">{formatCompactNumber(totalFollowers)}</p>
               <p className="text-xs text-oc-ink-muted">Total Followers</p>
             </div>
             {socialAccounts.map((acc) => (
-              <div key={acc.id} className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+              <div key={acc.id} className="rounded-oc border border-oc-border bg-oc-card p-3 text-center shadow-oc-sm">
                 <p className="text-lg font-semibold text-oc-ink">{formatCompactNumber(acc.followerCount)}</p>
                 <p className="text-xs text-oc-ink-muted">{acc.platformName}</p>
               </div>
@@ -271,15 +274,15 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
           <section className="mt-6">
             <h2 className="text-sm font-semibold text-oc-ink">Collaboration Track Record</h2>
             <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+              <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center shadow-oc-sm">
                 <p className="text-lg font-semibold text-oc-ink">{acceptanceRate !== null ? `${acceptanceRate}%` : "—"}</p>
                 <p className="text-xs text-oc-ink-muted">Acceptance Rate</p>
               </div>
-              <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+              <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center shadow-oc-sm">
                 <p className="text-lg font-semibold text-oc-ink">{trackRecord.accepted}</p>
                 <p className="text-xs text-oc-ink-muted">Completed Collaborations</p>
               </div>
-              <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+              <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center shadow-oc-sm">
                 <p className="text-lg font-semibold text-oc-ink">{avgResponseDays !== null ? `~${avgResponseDays}d` : "—"}</p>
                 <p className="text-xs text-oc-ink-muted">Avg. Response Time</p>
               </div>
@@ -372,7 +375,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
       </div>
 
       <aside className="lg:sticky lg:top-20 lg:self-start">
-        <div className="rounded-oc-lg border border-oc-border bg-oc-card p-6 shadow-sm">
+        <div className="rounded-oc-lg border border-oc-border bg-oc-card p-6 shadow-oc-sm">
           <AvailabilityBadge status={creator.availabilityStatus} />
           {creator.slotsRemaining !== null && creator.monthlyCapacity && (
             <p className="mt-2 text-xs text-oc-ink-muted">

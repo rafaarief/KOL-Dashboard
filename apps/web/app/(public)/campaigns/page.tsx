@@ -35,34 +35,35 @@ export default async function CampaignsPage({
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-extrabold text-oc-ink">Browse Campaigns</h1>
-      <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} open campaigns from brands across Indonesia.</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-oc-600">{total.toLocaleString()} open campaigns</p>
+      <h1 className="mt-1 font-display text-2xl font-extrabold text-oc-ink sm:text-3xl">Browse Campaigns</h1>
+      <p className="mt-1 text-sm text-oc-ink-muted">From brands across Indonesia.</p>
 
-      <form method="GET" className="mt-6 flex flex-wrap gap-3">
+      <form method="GET" className="mt-6 flex flex-wrap gap-2">
         <input
           name="q"
           defaultValue={params.q}
           placeholder="Search campaigns"
-          className="w-64 rounded-oc-input border border-oc-border bg-oc-card px-3 py-2 text-sm outline-none focus:border-oc-600"
+          className="w-64 rounded-full border border-oc-border bg-oc-card px-4 py-2 text-sm outline-none focus:border-oc-600"
         />
         <input
           name="city"
           defaultValue={params.city}
           placeholder="City"
-          className="w-40 rounded-oc-input border border-oc-border bg-oc-card px-3 py-2 text-sm outline-none focus:border-oc-600"
+          className="w-40 rounded-full border border-oc-border bg-oc-card px-4 py-2 text-sm outline-none focus:border-oc-600"
         />
         <input
           name="minBudget"
           defaultValue={params.minBudget}
           placeholder="Min budget (Rp)"
-          className="w-40 rounded-oc-input border border-oc-border bg-oc-card px-3 py-2 text-sm outline-none focus:border-oc-600"
+          className="w-40 rounded-full border border-oc-border bg-oc-card px-4 py-2 text-sm outline-none focus:border-oc-600"
         />
-        <select name="sort" defaultValue={params.sort ?? "newest"} className="rounded-oc-input border border-oc-border bg-oc-card px-3 py-2 text-sm">
+        <select name="sort" defaultValue={params.sort ?? "newest"} className="rounded-full border border-oc-border bg-oc-card px-4 py-2 text-sm">
           <option value="newest">Newest</option>
           <option value="highest_budget">Highest budget</option>
           <option value="closing_soon">Closing soon</option>
         </select>
-        <button type="submit" className="rounded-oc-input bg-oc-600 px-5 py-2 text-sm font-medium text-white hover:bg-oc-700">
+        <button type="submit" className="rounded-full bg-oc-600 px-5 py-2 text-sm font-semibold text-white shadow-oc-sm hover:bg-oc-700">
           Search
         </button>
       </form>
@@ -109,13 +110,13 @@ export default async function CampaignsPage({
         <div className="flex gap-2">
           <Link
             href={withPage(searchParams, Math.max(1, page - 1))}
-            className={`rounded-oc-input border border-oc-border px-3 py-1.5 ${page <= 1 ? "pointer-events-none opacity-40" : ""}`}
+            className={`rounded-full border border-oc-border px-4 py-1.5 ${page <= 1 ? "pointer-events-none opacity-40" : ""}`}
           >
             Previous
           </Link>
           <Link
             href={withPage(searchParams, Math.min(totalPages, page + 1))}
-            className={`rounded-oc-input border border-oc-border px-3 py-1.5 ${page >= totalPages ? "pointer-events-none opacity-40" : ""}`}
+            className={`rounded-full border border-oc-border px-4 py-1.5 ${page >= totalPages ? "pointer-events-none opacity-40" : ""}`}
           >
             Next
           </Link>

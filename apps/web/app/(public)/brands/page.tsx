@@ -27,23 +27,24 @@ export default async function BrandsDirectoryPage({
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-extrabold text-oc-ink">Browse Brands</h1>
-      <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} brands collaborating with creators.</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-oc-600">{total.toLocaleString()} brands</p>
+      <h1 className="mt-1 font-display text-2xl font-extrabold text-oc-ink sm:text-3xl">Browse Brands</h1>
+      <p className="mt-1 text-sm text-oc-ink-muted">Collaborating with creators across Indonesia.</p>
 
-      <form method="GET" className="mt-6 flex flex-wrap gap-3">
+      <form method="GET" className="mt-6 flex flex-wrap gap-2">
         <input
           name="q"
           defaultValue={params.q}
           placeholder="Search brand or industry"
-          className="w-64 rounded-oc-input border border-oc-border bg-oc-card px-3 py-2 text-sm outline-none focus:border-oc-600"
+          className="w-64 rounded-full border border-oc-border bg-oc-card px-4 py-2 text-sm outline-none focus:border-oc-600"
         />
         <input
           name="city"
           defaultValue={params.city}
           placeholder="City"
-          className="w-40 rounded-oc-input border border-oc-border bg-oc-card px-3 py-2 text-sm outline-none focus:border-oc-600"
+          className="w-40 rounded-full border border-oc-border bg-oc-card px-4 py-2 text-sm outline-none focus:border-oc-600"
         />
-        <button type="submit" className="rounded-oc-input bg-oc-600 px-5 py-2 text-sm font-medium text-white hover:bg-oc-700">
+        <button type="submit" className="rounded-full bg-oc-600 px-5 py-2 text-sm font-semibold text-white shadow-oc-sm hover:bg-oc-700">
           Search
         </button>
       </form>
@@ -65,10 +66,10 @@ export default async function BrandsDirectoryPage({
           Page {page} of {totalPages}
         </span>
         <div className="flex gap-2">
-          <Link href={withPage(searchParams, Math.max(1, page - 1))} className={`rounded-oc-input border border-oc-border px-3 py-1.5 ${page <= 1 ? "pointer-events-none opacity-40" : ""}`}>
+          <Link href={withPage(searchParams, Math.max(1, page - 1))} className={`rounded-full border border-oc-border px-4 py-1.5 ${page <= 1 ? "pointer-events-none opacity-40" : ""}`}>
             Previous
           </Link>
-          <Link href={withPage(searchParams, Math.min(totalPages, page + 1))} className={`rounded-oc-input border border-oc-border px-3 py-1.5 ${page >= totalPages ? "pointer-events-none opacity-40" : ""}`}>
+          <Link href={withPage(searchParams, Math.min(totalPages, page + 1))} className={`rounded-full border border-oc-border px-4 py-1.5 ${page >= totalPages ? "pointer-events-none opacity-40" : ""}`}>
             Next
           </Link>
         </div>

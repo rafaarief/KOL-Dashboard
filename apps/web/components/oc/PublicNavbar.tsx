@@ -20,19 +20,26 @@ export function PublicNavbar() {
     session?.user.role === "brand" ? "/dashboard/brand" : session?.user.role === "admin" ? "/admin" : "/dashboard/creator";
 
   return (
-    <nav className="sticky top-0 z-40 border-b border-oc-border bg-white/90 backdrop-blur">
-      <div className="mx-auto flex max-w-[1280px] items-center justify-between px-4 py-4 sm:px-6">
+    <div className="sticky top-3 z-40 px-3 sm:px-6">
+      <nav className="mx-auto flex max-w-[1280px] items-center justify-between rounded-full border border-oc-border bg-white/90 px-4 py-2.5 shadow-oc-sm backdrop-blur-md sm:px-5">
         <div className="flex items-center gap-8">
-          <Link href="/" className="text-lg font-bold tracking-tight text-oc-700">
-            OpenCollab<span className="text-oc-ink">.id</span>
+          <Link href="/" className="flex items-center gap-2 text-lg font-extrabold tracking-tight text-oc-ink">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-oc-gradient text-sm text-white">
+              OC
+            </span>
+            <span className="hidden sm:inline">
+              Open<span className="text-oc-600">Collab</span>
+            </span>
           </Link>
-          <div className="hidden items-center gap-6 lg:flex">
+          <div className="hidden items-center gap-1 lg:flex">
             {LINKS.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-medium ${
-                  pathname?.startsWith(link.href) ? "text-oc-700" : "text-oc-ink-muted hover:text-oc-ink"
+                className={`rounded-full px-3.5 py-2 text-sm font-medium transition ${
+                  pathname?.startsWith(link.href)
+                    ? "bg-oc-bg text-oc-700"
+                    : "text-oc-ink-muted hover:bg-oc-bg hover:text-oc-ink"
                 }`}
               >
                 {link.label}
@@ -41,34 +48,40 @@ export function PublicNavbar() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           {status === "authenticated" ? (
             <>
-              <Link href={dashboardHref} className="hidden text-sm font-medium text-oc-ink-muted hover:text-oc-ink sm:inline">
+              <Link
+                href={dashboardHref}
+                className="hidden rounded-full px-3.5 py-2 text-sm font-medium text-oc-ink-muted hover:bg-oc-bg hover:text-oc-ink sm:inline"
+              >
                 Dashboard
               </Link>
               <button
                 onClick={() => signOut({ callbackUrl: "/" })}
-                className="rounded-oc-input border border-oc-border px-4 py-2 text-sm font-medium text-oc-ink hover:bg-oc-bg"
+                className="rounded-full border border-oc-border px-4 py-2 text-sm font-medium text-oc-ink hover:bg-oc-bg"
               >
                 Log Out
               </button>
             </>
           ) : (
             <>
-              <Link href="/login" className="hidden text-sm font-medium text-oc-ink-muted hover:text-oc-ink sm:inline">
+              <Link
+                href="/login"
+                className="hidden rounded-full px-3.5 py-2 text-sm font-medium text-oc-ink-muted hover:bg-oc-bg hover:text-oc-ink sm:inline"
+              >
                 Log In
               </Link>
               <Link
                 href="/register"
-                className="rounded-oc-input bg-oc-600 px-4 py-2 text-sm font-medium text-white hover:bg-oc-700"
+                className="rounded-full bg-oc-dark px-4 py-2 text-sm font-semibold text-white shadow-oc-sm hover:bg-black"
               >
                 Join OpenCollab
               </Link>
             </>
           )}
         </div>
-      </div>
-    </nav>
+      </nav>
+    </div>
   );
 }

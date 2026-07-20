@@ -43,8 +43,9 @@ export default function RegisterCreatorPage() {
 
   return (
     <div className="mx-auto max-w-md">
-      <div className="rounded-oc-lg border border-oc-border bg-oc-card p-8 shadow-sm">
-        <h1 className="text-xl font-semibold text-oc-ink">Create your creator profile</h1>
+      <div className="rounded-oc-lg border border-oc-border bg-oc-card p-8 shadow-oc">
+        <span className="flex h-11 w-11 items-center justify-center rounded-full bg-tile-blush text-lg">🎨</span>
+        <h1 className="mt-4 font-display text-xl font-extrabold text-oc-ink">Create your creator profile</h1>
         <p className="mt-1 text-sm text-oc-ink-muted">Free to join — publish your rate card and start applying to campaigns.</p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -54,7 +55,7 @@ export default function RegisterCreatorPage() {
               required
               value={form.fullName}
               onChange={(e) => setForm({ ...form, fullName: e.target.value })}
-              className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm outline-none focus:border-oc-600"
+              className="mt-1 w-full rounded-full border border-oc-border bg-oc-bg px-4 py-2.5 text-sm outline-none focus:border-oc-600"
             />
           </div>
           <div>
@@ -65,7 +66,7 @@ export default function RegisterCreatorPage() {
               placeholder="nadiadaily"
               value={form.username}
               onChange={(e) => setForm({ ...form, username: e.target.value })}
-              className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm outline-none focus:border-oc-600"
+              className="mt-1 w-full rounded-full border border-oc-border bg-oc-bg px-4 py-2.5 text-sm outline-none focus:border-oc-600"
             />
           </div>
           <div>
@@ -75,7 +76,7 @@ export default function RegisterCreatorPage() {
               required
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm outline-none focus:border-oc-600"
+              className="mt-1 w-full rounded-full border border-oc-border bg-oc-bg px-4 py-2.5 text-sm outline-none focus:border-oc-600"
             />
           </div>
           <div>
@@ -86,7 +87,7 @@ export default function RegisterCreatorPage() {
               minLength={8}
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
-              className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm outline-none focus:border-oc-600"
+              className="mt-1 w-full rounded-full border border-oc-border bg-oc-bg px-4 py-2.5 text-sm outline-none focus:border-oc-600"
             />
           </div>
 

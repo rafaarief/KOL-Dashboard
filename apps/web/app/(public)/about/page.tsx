@@ -5,7 +5,7 @@ export const metadata: Metadata = { title: "About" };
 export default function AboutPage() {
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-bold text-oc-ink">About OpenCollab.id</h1>
+      <h1 className="font-display text-2xl font-extrabold text-oc-ink sm:text-3xl">About OpenCollab.id</h1>
       <p className="mt-4 text-sm text-oc-ink-muted">
         OpenCollab.id is a collaboration marketplace connecting brands and creators across Indonesia. Brands publish
         campaigns describing the collaboration they need; creators publish their availability, rates, and portfolio

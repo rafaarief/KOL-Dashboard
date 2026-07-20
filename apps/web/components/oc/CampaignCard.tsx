@@ -55,7 +55,7 @@ export function CampaignCard({ campaign }: { campaign: CampaignCardData }) {
   const VisualIcon = visual.icon;
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-oc border border-oc-border bg-oc-card shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg">
+    <div className="group relative flex flex-col overflow-hidden rounded-oc-lg border border-oc-border bg-oc-card shadow-oc-sm transition duration-200 hover:-translate-y-1 hover:shadow-oc">
       {campaign.featured && (
         <span className="absolute left-3 top-3 z-10 inline-flex items-center rounded-full bg-oc-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
           ★ Featured

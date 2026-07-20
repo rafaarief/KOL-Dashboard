@@ -1,18 +1,29 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+const TILES = ["bg-tile-blush", "bg-tile-sky", "bg-tile-butter", "bg-tile-mint", "bg-tile-lavender", "bg-tile-sand"];
+
+/** Deterministically picks one of the pastel tile backgrounds from a name/id string, so the
+ * same creator or brand always renders with the same tile color across renders. */
+export function tileForSeed(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
+  return TILES[Math.abs(hash) % TILES.length];
+}
+
 export function OcCard({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`rounded-oc border border-oc-border bg-oc-card shadow-sm ${className}`}>{children}</div>
+    <div className={`rounded-oc border border-oc-border bg-oc-card shadow-oc-sm ${className}`}>{children}</div>
   );
 }
 
 const BUTTON_BASE =
-  "inline-flex items-center justify-center gap-2 rounded-oc-input px-4 py-2 text-sm font-medium transition active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
+  "inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
 
 const BUTTON_VARIANTS = {
-  primary: "bg-oc-600 text-white hover:bg-oc-700",
-  secondary: "border border-oc-600 text-oc-600 bg-transparent hover:bg-oc-300/10",
+  primary: "bg-oc-600 text-white shadow-oc-sm hover:bg-oc-700",
+  secondary: "border border-oc-ink/15 text-oc-ink bg-white hover:bg-oc-bg",
+  dark: "bg-oc-dark text-white shadow-oc-sm hover:bg-black",
   destructive: "bg-red-600 text-white hover:bg-red-700",
   ghost: "text-oc-ink-muted hover:text-oc-ink hover:bg-oc-bg",
 } as const;
@@ -45,7 +56,7 @@ export function OcLinkButton({
 }
 
 const BADGE_TONES = {
-  neutral: "bg-zinc-100 text-zinc-700",
+  neutral: "bg-oc-border/60 text-oc-ink-muted",
   success: "bg-green-100 text-green-700",
   warning: "bg-yellow-100 text-yellow-800",
   info: "bg-blue-100 text-blue-700",

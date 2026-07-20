@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getDb, schema } from "@/lib/db";
 import { CampaignCard } from "@/components/oc/CampaignCard";
-import { Avatar, VerificationBadge } from "@/components/oc/primitives";
+import { Avatar, VerificationBadge, tileForSeed } from "@/components/oc/primitives";
 
 export const dynamic = "force-dynamic";
 
@@ -100,11 +100,14 @@ export default async function BrandProfilePage({ params }: { params: { slug: str
     <div>
       {/* eslint-disable-next-line react/no-danger */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <div className="flex items-center gap-4">
-        <Avatar name={brand.brandName} url={brand.logoUrl} size={72} />
-        <div>
+      <div className={`h-24 rounded-oc-lg ${tileForSeed(brand.slug)}`} aria-hidden="true" />
+      <div className="-mt-10 flex items-end gap-4 px-2">
+        <div className="rounded-full ring-4 ring-oc-bg">
+          <Avatar name={brand.brandName} url={brand.logoUrl} size={72} />
+        </div>
+        <div className="pb-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-oc-ink">{brand.brandName}</h1>
+            <h1 className="font-display text-xl font-extrabold text-oc-ink">{brand.brandName}</h1>
             <VerificationBadge status={brand.verificationStatus} />
           </div>
           <p className="text-sm text-oc-ink-muted">
@@ -122,23 +125,23 @@ export default async function BrandProfilePage({ params }: { params: { slug: str
       )}
 
       <div className="mt-6 grid grid-cols-3 gap-3 sm:grid-cols-5">
-        <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+        <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center shadow-oc-sm">
           <p className="text-lg font-semibold text-oc-ink">{activeCampaigns.length}</p>
           <p className="text-xs text-oc-ink-muted">Active Campaigns</p>
         </div>
-        <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+        <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center shadow-oc-sm">
           <p className="text-lg font-semibold text-oc-ink">{pastCampaigns.length}</p>
           <p className="text-xs text-oc-ink-muted">Past Campaigns</p>
         </div>
-        <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+        <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center shadow-oc-sm">
           <p className="text-lg font-semibold text-oc-ink">{Number(creatorsHired ?? 0)}</p>
           <p className="text-xs text-oc-ink-muted">Creators Hired</p>
         </div>
-        <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+        <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center shadow-oc-sm">
           <p className="text-lg font-semibold text-oc-ink">{reviewRate !== null ? `${reviewRate}%` : "—"}</p>
           <p className="text-xs text-oc-ink-muted">Applications Reviewed</p>
         </div>
-        <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+        <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center shadow-oc-sm">
           <p className="text-lg font-semibold text-oc-ink">{avgResponseDays !== null ? `~${avgResponseDays}d` : "—"}</p>
           <p className="text-xs text-oc-ink-muted">Avg. Response Time</p>
         </div>

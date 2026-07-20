@@ -29,26 +29,27 @@ export default async function MarketplacePage({
 
   return (
     <div>
-      <h1 className="font-display text-2xl font-extrabold text-oc-ink">Marketplace</h1>
+      <p className="text-xs font-semibold uppercase tracking-wide text-oc-600">Search everything</p>
+      <h1 className="mt-1 font-display text-2xl font-extrabold text-oc-ink sm:text-3xl">Marketplace</h1>
       <p className="mt-1 text-sm text-oc-ink-muted">One place to search campaigns, creators, and brands.</p>
 
-      <form method="GET" className="mt-6">
+      <form method="GET" className="mt-6 flex rounded-full border border-oc-border bg-oc-card p-1.5 shadow-oc-sm">
         <input type="hidden" name="tab" value={tab} />
         <input
           name="q"
           defaultValue={q}
           placeholder="Search campaigns, creators, brands, niches, or locations"
-          className="w-full rounded-oc-input border border-oc-border bg-oc-card px-4 py-3 text-sm outline-none focus:border-oc-600"
+          className="w-full rounded-full bg-transparent px-4 py-2.5 text-sm outline-none"
         />
       </form>
 
-      <div className="mt-6 flex gap-2 border-b border-oc-border">
+      <div className="mt-6 flex gap-1 rounded-full bg-oc-border/50 p-1">
         {TABS.map((t) => (
           <Link
             key={t.value}
             href={`/marketplace?tab=${t.value}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-            className={`-mb-px border-b-2 px-4 py-2 text-sm font-medium ${
-              tab === t.value ? "border-oc-600 text-oc-700" : "border-transparent text-oc-ink-muted hover:text-oc-ink"
+            className={`flex-1 rounded-full px-4 py-2 text-center text-sm font-semibold transition ${
+              tab === t.value ? "bg-oc-dark text-white shadow-oc-sm" : "text-oc-ink-muted hover:text-oc-ink"
             }`}
           >
             {t.label}

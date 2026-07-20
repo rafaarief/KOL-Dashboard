@@ -6,18 +6,18 @@ export const metadata: Metadata = { title: "Pricing" };
 export default function PricingPage() {
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-bold text-oc-ink">Pricing</h1>
+      <h1 className="font-display text-2xl font-extrabold text-oc-ink sm:text-3xl">Pricing</h1>
       <p className="mt-2 text-sm text-oc-ink-muted">OpenCollab.id is free for both brands and creators during this MVP phase.</p>
 
-      <div className="mt-8 rounded-oc-lg border border-oc-border bg-oc-card p-6">
-        <p className="text-lg font-semibold text-oc-ink">Free — for everyone, today</p>
+      <div className="mt-8 rounded-oc-lg border border-oc-border bg-tile-mint p-6 shadow-oc-sm">
+        <p className="font-display text-lg font-bold text-oc-ink">Free — for everyone, today</p>
         <ul className="mt-3 space-y-2 text-sm text-oc-ink-muted">
           <li>✓ Unlimited creator profiles</li>
           <li>✓ Unlimited campaign publication</li>
           <li>✓ Unlimited applications and invitations</li>
           <li>✓ No commission on collaborations</li>
         </ul>
-        <Link href="/register" className="mt-6 inline-block rounded-oc-input bg-oc-600 px-5 py-2 text-sm font-medium text-white hover:bg-oc-700">
+        <Link href="/register" className="mt-6 inline-block rounded-full bg-oc-dark px-6 py-2.5 text-sm font-semibold text-white shadow-oc-sm hover:bg-black">
           Join Free
         </Link>
       </div>

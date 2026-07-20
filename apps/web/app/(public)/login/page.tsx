@@ -49,8 +49,9 @@ function LoginForm() {
   }
 
   return (
-    <div className="rounded-oc-lg border border-oc-border bg-oc-card p-8 shadow-sm">
-      <h1 className="text-xl font-semibold text-oc-ink">Log in to OpenCollab</h1>
+    <div className="rounded-oc-lg border border-oc-border bg-oc-card p-8 shadow-oc">
+      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-oc-gradient text-sm font-bold text-white">OC</span>
+      <h1 className="mt-4 font-display text-xl font-extrabold text-oc-ink">Log in to OpenCollab</h1>
       <p className="mt-1 text-sm text-oc-ink-muted">Welcome back — brands and creators sign in here.</p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -61,7 +62,7 @@ function LoginForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm outline-none focus:border-oc-600"
+            className="mt-1 w-full rounded-full border border-oc-border bg-oc-bg px-4 py-2.5 text-sm outline-none focus:border-oc-600"
           />
         </div>
         <div>
@@ -71,7 +72,7 @@ function LoginForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm outline-none focus:border-oc-600"
+            className="mt-1 w-full rounded-full border border-oc-border bg-oc-bg px-4 py-2.5 text-sm outline-none focus:border-oc-600"
           />
         </div>
 

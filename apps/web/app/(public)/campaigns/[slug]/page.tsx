@@ -9,6 +9,7 @@ import { SaveButton } from "@/components/oc/SaveButton";
 import { CampaignCard } from "@/components/oc/CampaignCard";
 import { ShareCampaignButton } from "@/components/oc/ShareProfileButton";
 import { Avatar, CampaignStatusBadge, VerificationBadge, formatIDR } from "@/components/oc/primitives";
+import { campaignVisualFor } from "@/lib/campaignVisuals";
 
 export const dynamic = "force-dynamic";
 
@@ -167,6 +168,8 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
         .limit(3)
     : [];
 
+  const visual = campaignVisualFor(campaign.categoryName);
+  const VisualIcon = visual.icon;
   const slotsRemaining = Math.max(0, campaign.creatorCountNeeded - campaign.creatorCountAccepted);
   const deadlinePassed = Boolean(campaign.applicationDeadline && new Date(campaign.applicationDeadline) < new Date());
   const deliverables = Array.isArray(campaign.deliverables) ? (campaign.deliverables as string[]) : [];
@@ -198,7 +201,16 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
       {/* eslint-disable-next-line react/no-danger */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <div>
-        <div className="flex items-center justify-between gap-2">
+        <div className={`relative flex h-40 items-center justify-center overflow-hidden rounded-oc-lg bg-gradient-to-br sm:h-52 ${visual.gradient}`}>
+          {campaign.coverImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={campaign.coverImageUrl} alt={campaign.coverImageAlt || campaign.title} className="h-full w-full object-cover" />
+          ) : (
+            <VisualIcon className="h-14 w-14 text-white/70" strokeWidth={1.5} aria-hidden="true" />
+          )}
+        </div>
+
+        <div className="mt-4 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <Avatar name={campaign.brandName} url={campaign.brandLogoUrl} size={32} />
             <Link href={`/brands/${campaign.brandSlug}`} className="text-sm font-medium text-oc-ink hover:underline">
@@ -209,7 +221,7 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
           <ShareCampaignButton slug={campaign.slug} variant="link" />
         </div>
 
-        <h1 className="mt-3 text-2xl font-bold text-oc-ink">{campaign.title}</h1>
+        <h1 className="mt-3 font-display text-2xl font-extrabold text-oc-ink sm:text-3xl">{campaign.title}</h1>
         <div className="mt-2 flex flex-wrap gap-2">
           <CampaignStatusBadge status={campaign.status} />
           {campaign.categoryName && (
@@ -284,9 +296,9 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
         )}
       </div>
 
-      <aside className="lg:sticky lg:top-20 lg:self-start">
-        <div className="rounded-oc-lg border border-oc-border bg-oc-card p-6 shadow-sm">
-          <p className="text-lg font-semibold text-oc-ink">{budgetLabel(campaign)}</p>
+      <aside className="lg:sticky lg:top-24 lg:self-start">
+        <div className="rounded-oc-lg border border-oc-border bg-oc-card p-6 shadow-oc-sm">
+          <p className="font-display text-lg font-bold text-oc-600">{budgetLabel(campaign)}</p>
           <p className="mt-1 text-xs text-oc-ink-muted">
             {slotsRemaining} of {campaign.creatorCountNeeded} creator slots remaining
           </p>
@@ -301,7 +313,7 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
                 This campaign has filled all of its creator slots.
               </p>
             ) : !session ? (
-              <Link href={`/login?next=/campaigns/${campaign.slug}`} className="block w-full rounded-oc-input bg-oc-600 px-4 py-2 text-center text-sm font-medium text-white hover:bg-oc-700">
+              <Link href={`/login?next=/campaigns/${campaign.slug}`} className="block w-full rounded-full bg-oc-dark px-4 py-2.5 text-center text-sm font-semibold text-white shadow-oc-sm hover:bg-black">
                 Log in to Apply
               </Link>
             ) : session.user.role === "creator" ? (
@@ -320,7 +332,7 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
           )}
         </div>
 
-        <div className="mt-4 rounded-oc-lg border border-oc-border bg-oc-card p-6 shadow-sm">
+        <div className="mt-4 rounded-oc-lg border border-oc-border bg-oc-card p-6 shadow-oc-sm">
           <div className="flex items-center gap-2">
             <Avatar name={campaign.brandName} url={campaign.brandLogoUrl} size={32} />
             <div>
