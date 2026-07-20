@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useDebouncedValue, useFilteredList } from "@/lib/useFilteredList";
 import { CampaignStatusBadge, OcCard, Pagination, formatIDR } from "@/components/oc/primitives";
 import { useToast } from "@/components/oc/Toast";
@@ -9,7 +10,18 @@ const ACTION_LABELS: Record<string, string> = {
   approve: "Campaign approved and published.",
   reject: "Campaign rejected.",
   pause: "Campaign paused.",
+  resume: "Campaign resumed.",
   close: "Campaign closed.",
+};
+
+// Only the actions valid from each status are shown — matches the server-enforced state machine
+// in /api/admin/campaigns, so a click can never surface a 409 under normal use.
+const NEXT_ACTIONS: Record<string, string[]> = {
+  draft: ["approve", "reject"],
+  published: ["pause", "close"],
+  paused: ["resume", "close"],
+  closed: [],
+  rejected: [],
 };
 
 interface AdminCampaignRow {
@@ -51,14 +63,22 @@ export default function AdminCampaignsPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, action }),
     });
-    showToast(response.ok ? ACTION_LABELS[action] ?? "Updated." : "That action failed.", response.ok ? "success" : "error");
+    const payload = await response.json().catch(() => ({}));
+    showToast(response.ok ? ACTION_LABELS[action] ?? "Updated." : payload.message ?? "That action failed.", response.ok ? "success" : "error");
     reload();
   }
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-oc-ink">Campaigns</h1>
-      <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} campaigns.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-oc-ink">Campaigns</h1>
+          <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} campaigns.</p>
+        </div>
+        <a href="/api/admin/campaigns?format=csv" className="rounded-oc-input border border-oc-border px-3.5 py-1.5 text-sm hover:bg-oc-bg">
+          Export CSV
+        </a>
+      </div>
       {error && <div className="mt-4 rounded-oc border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       <div className="mt-4 flex flex-wrap gap-3">
@@ -96,7 +116,11 @@ export default function AdminCampaignsPage() {
           <tbody className="divide-y divide-oc-border">
             {rows.map((row) => (
               <tr key={row.id}>
-                <td className="px-4 py-3 font-medium text-oc-ink">{row.title}</td>
+                <td className="px-4 py-3 font-medium text-oc-ink">
+                  <Link href={`/admin/campaigns/${row.id}`} className="hover:underline">
+                    {row.title}
+                  </Link>
+                </td>
                 <td className="px-4 py-3">{row.brandName}</td>
                 <td className="px-4 py-3">{row.categoryName ?? "—"}</td>
                 <td className="px-4 py-3">{budgetLabel(row)}</td>
@@ -110,18 +134,12 @@ export default function AdminCampaignsPage() {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex flex-wrap gap-1.5 text-xs">
-                    <button onClick={() => runAction(row.id, "approve")} className="rounded border border-oc-border px-2 py-1 hover:bg-oc-bg">
-                      Approve
-                    </button>
-                    <button onClick={() => runAction(row.id, "reject")} className="rounded border border-oc-border px-2 py-1 hover:bg-oc-bg">
-                      Reject
-                    </button>
-                    <button onClick={() => runAction(row.id, "pause")} className="rounded border border-oc-border px-2 py-1 hover:bg-oc-bg">
-                      Pause
-                    </button>
-                    <button onClick={() => runAction(row.id, "close")} className="rounded border border-oc-border px-2 py-1 hover:bg-oc-bg">
-                      Close
-                    </button>
+                    {(NEXT_ACTIONS[row.status] ?? []).map((action) => (
+                      <button key={action} onClick={() => runAction(row.id, action)} className="rounded border border-oc-border px-2 py-1 capitalize hover:bg-oc-bg">
+                        {action}
+                      </button>
+                    ))}
+                    {(NEXT_ACTIONS[row.status] ?? []).length === 0 && <span className="text-oc-ink-muted">—</span>}
                   </div>
                 </td>
               </tr>

@@ -7,36 +7,37 @@ import { signOut } from "next-auth/react";
 
 const NAV_GROUPS = [
   {
-    label: "Marketplace",
+    label: "OpenCollab",
     items: [
       { href: "/admin", label: "Overview", exact: true },
       { href: "/admin/creators", label: "Creators" },
       { href: "/admin/brands", label: "Brands" },
       { href: "/admin/campaigns", label: "Campaigns" },
       { href: "/admin/applications", label: "Applications" },
-      { href: "/admin/categories", label: "Categories" },
+      { href: "/admin/categories", label: "Categories & Niches" },
       { href: "/admin/verifications", label: "Verifications" },
       { href: "/admin/reports", label: "Reports" },
-      { href: "/admin/users", label: "Users" },
-      { href: "/admin/analytics", label: "Analytics" },
     ],
   },
   {
-    label: "KOL Finder",
+    label: "Growth & Operations",
     items: [
-      { href: "/admin/kol-finder", label: "Overview", exact: true },
+      { href: "/admin/kol-finder", label: "KOL Finder", exact: true },
       { href: "/admin/kol-finder/search", label: "Search by Keyword" },
       { href: "/admin/kol-finder/database", label: "KOL Database" },
       { href: "/admin/kol-finder/history", label: "Search History" },
       { href: "/admin/kol-finder/shortlists", label: "Saved Lists" },
       { href: "/admin/kol-finder/nano-kols", label: "Nano KOL Directory" },
+      { href: "/admin/business-leads", label: "Business Leads" },
     ],
   },
   {
-    label: "Other tools",
+    label: "Platform",
     items: [
-      { href: "/admin/business-leads", label: "Business Leads" },
+      { href: "/admin/users", label: "Users" },
+      { href: "/admin/analytics", label: "Analytics" },
       { href: "/admin/settings", label: "Settings" },
+      { href: "/admin/audit-log", label: "Audit Log" },
     ],
   },
 ];

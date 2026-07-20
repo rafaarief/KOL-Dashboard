@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { requireRole } from "@/lib/requireRole";
+import { recordAudit } from "@/lib/auditLog";
+import { csvResponse } from "@/lib/csv";
 
 export async function GET(request: Request) {
   const session = await requireRole(["admin"]);
@@ -12,8 +14,9 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const q = url.searchParams.get("q");
   const verification = url.searchParams.get("verification");
+  const isCsv = url.searchParams.get("format") === "csv";
   const page = Number.parseInt(url.searchParams.get("page") ?? "1", 10);
-  const pageSize = Math.min(100, Number.parseInt(url.searchParams.get("pageSize") ?? "30", 10));
+  const pageSize = isCsv ? 5000 : Math.min(100, Number.parseInt(url.searchParams.get("pageSize") ?? "30", 10));
 
   const db = getDb();
   const conditions = [];
@@ -27,6 +30,7 @@ export async function GET(request: Request) {
       id: schema.brandProfiles.id,
       slug: schema.brandProfiles.slug,
       brandName: schema.brandProfiles.brandName,
+      logoUrl: schema.brandProfiles.logoUrl,
       industry: schema.brandProfiles.industry,
       city: schema.brandProfiles.city,
       email: schema.users.email,
@@ -41,7 +45,9 @@ export async function GET(request: Request) {
     .where(whereClause)
     .orderBy(desc(schema.brandProfiles.createdAt))
     .limit(pageSize)
-    .offset((page - 1) * pageSize);
+    .offset(isCsv ? 0 : (page - 1) * pageSize);
+
+  if (isCsv) return csvResponse(rows, "brands.csv");
 
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
@@ -73,10 +79,19 @@ export async function PATCH(request: Request) {
   }
 
   const db = getDb();
+  const [before] = await db
+    .select({ status: schema.brandProfiles.status, verificationStatus: schema.brandProfiles.verificationStatus, featured: schema.brandProfiles.featured })
+    .from(schema.brandProfiles)
+    .where(eq(schema.brandProfiles.id, id))
+    .limit(1);
+  if (!before) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+
   await db
     .update(schema.brandProfiles)
     .set({ ...ACTIONS[action], updatedAt: new Date() })
     .where(eq(schema.brandProfiles.id, id));
+
+  await recordAudit({ actorUserId: session.user.id, action: `brand.${action}`, entityType: "brand", entityId: id, before, after: ACTIONS[action], request });
 
   return NextResponse.json({ success: true });
 }

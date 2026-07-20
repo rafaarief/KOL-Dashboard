@@ -1,9 +1,11 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { and, desc, eq, ilike, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { requireRole } from "@/lib/requireRole";
+import { recordAudit } from "@/lib/auditLog";
+import { csvResponse } from "@/lib/csv";
 
 export async function GET(request: Request) {
   const session = await requireRole(["admin"]);
@@ -12,8 +14,9 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const q = url.searchParams.get("q");
   const status = url.searchParams.get("status");
+  const isCsv = url.searchParams.get("format") === "csv";
   const page = Number.parseInt(url.searchParams.get("page") ?? "1", 10);
-  const pageSize = Math.min(100, Number.parseInt(url.searchParams.get("pageSize") ?? "30", 10));
+  const pageSize = isCsv ? 5000 : Math.min(100, Number.parseInt(url.searchParams.get("pageSize") ?? "30", 10));
 
   const db = getDb();
   const conditions = [];
@@ -46,18 +49,30 @@ export async function GET(request: Request) {
     .where(whereClause)
     .orderBy(desc(schema.campaigns.createdAt))
     .limit(pageSize)
-    .offset((page - 1) * pageSize);
+    .offset(isCsv ? 0 : (page - 1) * pageSize);
+
+  if (isCsv) return csvResponse(rows, "campaigns.csv");
 
   const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(schema.campaigns).where(whereClause);
 
   return NextResponse.json({ results: rows, total: Number(count), page, pageSize });
 }
 
-const ACTIONS = {
-  approve: { status: "published", publishedAt: new Date() },
-  reject: { status: "rejected" },
-  pause: { status: "paused" },
-  close: { status: "closed" },
+// State-restricted transitions mirror the brand-side state machine (app/api/brand/campaigns/[id]/route.ts)
+// so admin and brand actions can never disagree on what's a valid move. "reject" only applies to
+// drafts still awaiting approval, not published campaigns — use pause/close for those.
+const TRANSITIONS = {
+  approve: { from: ["draft"], set: { status: "published", publishedAt: new Date() } },
+  reject: { from: ["draft"], set: { status: "rejected" } },
+  pause: { from: ["published"], set: { status: "paused" } },
+  resume: { from: ["paused"], set: { status: "published" } },
+  close: { from: ["published", "paused"], set: { status: "closed" } },
+  // Explicit override: reopening a closed/rejected campaign is unusual enough that it always
+  // gets its own audit-log action name (campaign.admin_reopen) rather than blending into "approve".
+  admin_reopen: { from: ["closed", "rejected"], set: { status: "draft" } },
+} as const;
+
+const UNRESTRICTED_ACTIONS = {
   feature: { featured: true },
   unfeature: { featured: false },
 } as const;
@@ -68,16 +83,47 @@ export async function PATCH(request: Request) {
 
   const body = await request.json().catch(() => null);
   const id = body?.id as string | undefined;
-  const action = body?.action as keyof typeof ACTIONS | undefined;
-  if (!id || !action || !(action in ACTIONS)) {
-    return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
-  }
+  const action = body?.action as string | undefined;
+  if (!id) return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
 
   const db = getDb();
-  await db
-    .update(schema.campaigns)
-    .set({ ...ACTIONS[action], updatedAt: new Date() })
-    .where(eq(schema.campaigns.id, id));
 
-  return NextResponse.json({ success: true });
+  if (action && action in UNRESTRICTED_ACTIONS) {
+    const set = UNRESTRICTED_ACTIONS[action as keyof typeof UNRESTRICTED_ACTIONS];
+    const [before] = await db.select({ featured: schema.campaigns.featured }).from(schema.campaigns).where(eq(schema.campaigns.id, id)).limit(1);
+    if (!before) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+    await db.update(schema.campaigns).set({ ...set, updatedAt: new Date() }).where(eq(schema.campaigns.id, id));
+    await recordAudit({ actorUserId: session.user.id, action: `campaign.${action}`, entityType: "campaign", entityId: id, before, after: set, request });
+    return NextResponse.json({ success: true });
+  }
+
+  if (action && action in TRANSITIONS) {
+    const { from, set } = TRANSITIONS[action as keyof typeof TRANSITIONS];
+    const [before] = await db.select({ status: schema.campaigns.status }).from(schema.campaigns).where(eq(schema.campaigns.id, id)).limit(1);
+    if (!before) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+
+    const [updated] = await db
+      .update(schema.campaigns)
+      .set({ ...set, updatedAt: new Date() })
+      .where(and(eq(schema.campaigns.id, id), inArray(schema.campaigns.status, from as unknown as string[])))
+      .returning({ id: schema.campaigns.id });
+
+    if (!updated) {
+      return NextResponse.json({ error: "INVALID_TRANSITION", message: `Campaign is "${before.status}" — "${action}" isn't valid from there.` }, { status: 409 });
+    }
+
+    await recordAudit({
+      actorUserId: session.user.id,
+      action: `campaign.${action}`,
+      entityType: "campaign",
+      entityId: id,
+      before,
+      after: set,
+      metadata: action === "admin_reopen" ? { override: true } : undefined,
+      request,
+    });
+    return NextResponse.json({ success: true });
+  }
+
+  return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
 }

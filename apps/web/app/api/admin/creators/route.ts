@@ -4,6 +4,8 @@ import { NextResponse } from "next/server";
 import { and, desc, eq, gte, ilike, or, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { requireRole } from "@/lib/requireRole";
+import { recordAudit } from "@/lib/auditLog";
+import { csvResponse } from "@/lib/csv";
 
 export async function GET(request: Request) {
   const session = await requireRole(["admin"]);
@@ -13,8 +15,9 @@ export async function GET(request: Request) {
   const q = url.searchParams.get("q");
   const availability = url.searchParams.get("availability");
   const verification = url.searchParams.get("verification");
+  const isCsv = url.searchParams.get("format") === "csv";
   const page = Number.parseInt(url.searchParams.get("page") ?? "1", 10);
-  const pageSize = Math.min(100, Number.parseInt(url.searchParams.get("pageSize") ?? "30", 10));
+  const pageSize = isCsv ? 5000 : Math.min(100, Number.parseInt(url.searchParams.get("pageSize") ?? "30", 10));
 
   const db = getDb();
   const conditions = [];
@@ -33,6 +36,7 @@ export async function GET(request: Request) {
       id: schema.creatorProfiles.id,
       username: schema.creatorProfiles.username,
       displayName: schema.creatorProfiles.displayName,
+      avatarUrl: schema.creatorProfiles.avatarUrl,
       city: schema.creatorProfiles.city,
       email: schema.users.email,
       availabilityStatus: schema.creatorProfiles.availabilityStatus,
@@ -47,7 +51,9 @@ export async function GET(request: Request) {
     .where(whereClause)
     .orderBy(desc(schema.creatorProfiles.createdAt))
     .limit(pageSize)
-    .offset((page - 1) * pageSize);
+    .offset(isCsv ? 0 : (page - 1) * pageSize);
+
+  if (isCsv) return csvResponse(rows, "creators.csv");
 
   const [{ count }] = await db
     .select({ count: sql<number>`count(*)` })
@@ -79,10 +85,19 @@ export async function PATCH(request: Request) {
   }
 
   const db = getDb();
+  const [before] = await db
+    .select({ status: schema.creatorProfiles.status, verificationStatus: schema.creatorProfiles.verificationStatus, featured: schema.creatorProfiles.featured })
+    .from(schema.creatorProfiles)
+    .where(eq(schema.creatorProfiles.id, id))
+    .limit(1);
+  if (!before) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
+
   await db
     .update(schema.creatorProfiles)
     .set({ ...ACTIONS[action], updatedAt: new Date() })
     .where(eq(schema.creatorProfiles.id, id));
+
+  await recordAudit({ actorUserId: session.user.id, action: `creator.${action}`, entityType: "creator", entityId: id, before, after: ACTIONS[action], request });
 
   return NextResponse.json({ success: true });
 }

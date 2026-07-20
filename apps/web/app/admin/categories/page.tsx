@@ -6,6 +6,8 @@ import { OcButton, OcCard } from "@/components/oc/primitives";
 interface TaxonomyRow {
   id: string;
   name: string;
+  creatorCount?: number;
+  campaignCount?: number;
 }
 
 interface TaxonomyData {
@@ -49,6 +51,17 @@ function TaxonomySection({
         {items.map((item) => (
           <span key={item.id} className="rounded-full border border-oc-border px-2.5 py-0.5 text-xs text-oc-ink-muted">
             {item.name}
+            {(item.creatorCount !== undefined || item.campaignCount !== undefined) && (
+              <span>
+                {" — "}
+                {[
+                  item.creatorCount !== undefined ? `${item.creatorCount} creators` : null,
+                  item.campaignCount !== undefined ? `${item.campaignCount} campaigns` : null,
+                ]
+                  .filter(Boolean)
+                  .join(", ")}
+              </span>
+            )}
           </span>
         ))}
         {items.length === 0 && <p className="text-xs text-oc-ink-muted">None yet.</p>}
