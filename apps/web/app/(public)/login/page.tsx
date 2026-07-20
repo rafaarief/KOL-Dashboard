@@ -3,8 +3,14 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
+import { getSession, signIn } from "next-auth/react";
 import { OcButton } from "@/components/oc/primitives";
+
+const ROLE_HOME: Record<string, string> = {
+  admin: "/admin",
+  brand: "/dashboard/brand",
+  creator: "/dashboard/creator",
+};
 
 function LoginForm() {
   const router = useRouter();
@@ -25,15 +31,20 @@ function LoginForm() {
       redirect: false,
     });
 
-    setIsSubmitting(false);
-
     if (!result || result.error) {
+      setIsSubmitting(false);
       setError("Invalid email or password.");
       return;
     }
 
+    // The generic /login form doesn't know the account's role up front — signIn({redirect:false})
+    // only returns ok/error, not the session — so without this, every login landed on
+    // /dashboard/creator regardless of role. Middleware then blocked brand/admin accounts from
+    // that path and bounced them straight back to /login, which looked like login was broken.
+    const session = await getSession();
+    const role = session?.user?.role ?? "creator";
     const next = searchParams.get("next");
-    router.push(next ?? "/dashboard/creator");
+    router.push(next ?? ROLE_HOME[role] ?? "/dashboard/creator");
     router.refresh();
   }
 
