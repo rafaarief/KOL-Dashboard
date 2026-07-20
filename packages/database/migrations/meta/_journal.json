@@ -50,6 +50,13 @@
       "when": 1784538558815,
       "tag": "0006_sad_lady_bullseye",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1784551558943,
+      "tag": "0007_workable_spot",
+      "breakpoints": true
     }
   ]
 }

@@ -22,6 +22,8 @@ export const users = pgTable("users", {
   fullName: text("full_name"),
   role: text("role").notNull().default("specialist"),
   passwordHash: text("password_hash"),
+  // active | suspended — enforced at login in auth.ts, not just hidden in the UI.
+  status: text("status").notNull().default("active"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
 });
@@ -627,6 +629,10 @@ export const campaigns = pgTable(
     campaignEndDate: timestamp("campaign_end_date", { withTimezone: true }),
     status: text("status").notNull().default("draft"),
     featured: boolean("featured").notNull().default(false),
+    // External image URL only — no upload pipeline this sprint. Card rendering falls back to a
+    // category-based generated visual when this is empty.
+    coverImageUrl: text("cover_image_url"),
+    coverImageAlt: text("cover_image_alt"),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -687,6 +693,8 @@ export const campaignApplications = pgTable(
     estimatedDeliveryDays: integer("estimated_delivery_days"),
     note: text("note"),
     status: text("status").notNull().default("submitted"), // submitted | viewed | shortlisted | accepted | rejected | withdrawn
+    // Admin-internal only — never returned to creator/brand API responses.
+    adminNote: text("admin_note"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -759,8 +767,10 @@ export const verificationRequests = pgTable("verification_requests", {
   id: uuid("id").primaryKey().defaultRandom(),
   subjectType: text("subject_type").notNull(), // creator | brand
   subjectId: uuid("subject_id").notNull(),
+  // not_requested | pending | needs_information | approved | rejected | revoked
   status: text("status").notNull().default("pending"),
   reviewerNote: text("reviewer_note"),
+  reviewerId: uuid("reviewer_id").references(() => users.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
 });
@@ -771,9 +781,36 @@ export const reports = pgTable("reports", {
   targetType: text("target_type").notNull(),
   targetId: uuid("target_id").notNull(),
   reason: text("reason").notNull(),
+  // open | under_review | resolved | dismissed
   status: text("status").notNull().default("open"),
+  resolverId: uuid("resolver_id").references(() => users.id, { onDelete: "set null" }),
+  resolutionReason: text("resolution_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
 });
+
+/** High-impact admin action trail — never stores passwords/tokens/secrets, only enough of a
+ * before/after snapshot to answer "who changed what, when" during a support/dispute review. */
+export const adminAuditLog = pgTable(
+  "admin_audit_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    actorUserId: uuid("actor_user_id").references(() => users.id, { onDelete: "set null" }),
+    action: text("action").notNull(),
+    entityType: text("entity_type").notNull(),
+    entityId: text("entity_id"),
+    beforeState: jsonb("before_state"),
+    afterState: jsonb("after_state"),
+    metadata: jsonb("metadata").notNull().default({}),
+    ipAddress: text("ip_address"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    actorIdx: index("admin_audit_log_actor_idx").on(table.actorUserId),
+    entityIdx: index("admin_audit_log_entity_idx").on(table.entityType, table.entityId),
+    createdAtIdx: index("admin_audit_log_created_at_idx").on(table.createdAt),
+  })
+);
 
 export const notifications = pgTable("notifications", {
   id: uuid("id").primaryKey().defaultRandom(),
