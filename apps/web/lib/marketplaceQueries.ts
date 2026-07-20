@@ -123,9 +123,11 @@ export async function listActiveCreators(params: CreatorListParams) {
       primaryNicheName: schema.niches.name,
       totalFollowers: followersSubquery,
       featured: schema.creatorProfiles.featured,
+      lastLoginAt: schema.users.lastLoginAt,
     })
     .from(schema.creatorProfiles)
     .leftJoin(schema.niches, eq(schema.niches.id, schema.creatorProfiles.primaryNicheId))
+    .leftJoin(schema.users, eq(schema.users.id, schema.creatorProfiles.userId))
     .where(
       params.minFollowers ? and(whereClause, gte(followersSubquery, Number.parseInt(params.minFollowers, 10))) : whereClause
     )
@@ -170,6 +172,15 @@ export async function listActiveBrands(params: BrandListParams) {
       verificationStatus: schema.brandProfiles.verificationStatus,
       activeCampaignCount: sql<number>`(select count(*) from campaigns c where c.brand_profile_id = brand_profiles.id and c.status = 'published')`,
       featured: schema.brandProfiles.featured,
+      // "Responds Quickly" is only ever true from real review-latency data (avg <= 2 days) and
+      // requires at least 3 reviewed applications — a single fast reply shouldn't earn the badge.
+      respondsQuickly: sql<boolean>`(
+        select count(*) filter (where ca.status <> 'submitted') >= 3
+          and avg(extract(epoch from (ca.updated_at - ca.created_at)) / 86400) filter (where ca.status <> 'submitted') <= 2
+        from campaign_applications ca
+        inner join campaigns c on c.id = ca.campaign_id
+        where c.brand_profile_id = brand_profiles.id
+      )`,
     })
     .from(schema.brandProfiles)
     .where(whereClause)

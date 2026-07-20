@@ -27,6 +27,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const valid = await compare(password, user.passwordHash);
         if (!valid) return null;
 
+        await db.update(schema.users).set({ lastLoginAt: new Date() }).where(eq(schema.users.id, user.id));
+
         return { id: user.id, email: user.email, name: user.fullName ?? undefined, role: user.role };
       },
     }),

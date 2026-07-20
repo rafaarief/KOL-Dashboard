@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ShareCampaignButton } from "@/components/oc/ShareProfileButton";
 import { CampaignStatusBadge, OcCard } from "@/components/oc/primitives";
 
 interface CampaignRow {
@@ -64,16 +65,25 @@ export default function BrandCampaignsPage() {
                 <td className="px-4 py-3">{row.acceptedCount}</td>
                 <td className="px-4 py-3 text-xs">{row.applicationDeadline ? new Date(row.applicationDeadline).toLocaleDateString() : "—"}</td>
                 <td className="px-4 py-3">
-                  <Link href={`/dashboard/brand/campaigns/${row.id}`} className="text-xs text-oc-700 hover:underline">
-                    Manage →
-                  </Link>
+                  <div className="flex items-center gap-3">
+                    <Link href={`/dashboard/brand/campaigns/${row.id}`} className="text-xs text-oc-700 hover:underline">
+                      Manage →
+                    </Link>
+                    {row.status === "published" && <ShareCampaignButton slug={row.slug} variant="link" />}
+                  </div>
                 </td>
               </tr>
             ))}
             {rows.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-oc-ink-muted">
-                  You haven&apos;t posted any campaigns yet.
+                <td colSpan={8} className="px-4 py-8 text-center text-oc-ink-muted">
+                  <p className="font-medium text-oc-ink">You haven&apos;t posted your first campaign yet.</p>
+                  <p className="mx-auto mt-1 max-w-sm text-xs">
+                    Campaigns with a clear budget and specific deliverables get significantly more applications than vague briefs. It takes about two minutes to set one up.
+                  </p>
+                  <a href="/dashboard/brand/campaigns/new" className="mt-3 inline-block rounded-oc-input bg-oc-600 px-4 py-2 text-xs font-medium text-white hover:bg-oc-700">
+                    Post Your First Campaign
+                  </a>
                 </td>
               </tr>
             )}

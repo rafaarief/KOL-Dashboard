@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Avatar, AvailabilityBadge, CategoryChip, VerificationBadge, formatCompactNumber, formatIDR } from "./primitives";
 
+const RECENTLY_ACTIVE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+
 export interface CreatorCardData {
   username: string;
   displayName: string;
@@ -14,9 +16,12 @@ export interface CreatorCardData {
   slotsRemaining: number | null;
   monthlyCapacity: number | null;
   featured?: boolean;
+  lastLoginAt?: Date | string | null;
 }
 
 export function CreatorCard({ creator }: { creator: CreatorCardData }) {
+  const isRecentlyActive = creator.lastLoginAt ? Date.now() - new Date(creator.lastLoginAt).getTime() < RECENTLY_ACTIVE_WINDOW_MS : false;
+
   return (
     <div className="relative flex flex-col items-center rounded-oc border border-oc-border bg-oc-card p-5 text-center shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
       {creator.featured && (
@@ -35,6 +40,11 @@ export function CreatorCard({ creator }: { creator: CreatorCardData }) {
 
       <div className="mt-3 flex flex-wrap justify-center gap-1.5">
         {creator.primaryNicheName && <CategoryChip>{creator.primaryNicheName}</CategoryChip>}
+        {isRecentlyActive && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-[10px] font-medium text-green-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500" /> Recently Active
+          </span>
+        )}
       </div>
 
       <div className="mt-3 grid w-full grid-cols-2 gap-2 text-xs">

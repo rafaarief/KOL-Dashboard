@@ -10,6 +10,7 @@ export interface BrandCardData {
   verificationStatus: string;
   activeCampaignCount: number;
   featured?: boolean;
+  respondsQuickly?: boolean;
 }
 
 export function BrandCard({ brand }: { brand: BrandCardData }) {
@@ -31,6 +32,11 @@ export function BrandCard({ brand }: { brand: BrandCardData }) {
         {brand.industry ?? "Brand"}
         {brand.city ? ` · ${brand.city}` : ""}
       </p>
+      {brand.respondsQuickly && (
+        <span className="mt-1.5 inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-700">
+          ⚡ Responds Quickly
+        </span>
+      )}
       <p className="mt-3 text-xs text-oc-ink-muted">{brand.activeCampaignCount} active campaign(s)</p>
       <Link
         href={`/brands/${brand.slug}`}
