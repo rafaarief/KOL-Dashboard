@@ -3,6 +3,16 @@
 import { useState } from "react";
 import { useDebouncedValue, useFilteredList } from "@/lib/useFilteredList";
 import { AvailabilityBadge, OcCard, Pagination, VerificationBadge } from "@/components/oc/primitives";
+import { useToast } from "@/components/oc/Toast";
+
+const ACTION_LABELS: Record<string, string> = {
+  verify: "Creator verified.",
+  reject_verification: "Verification rejected.",
+  suspend: "Creator suspended.",
+  reactivate: "Creator reactivated.",
+  feature: "Creator featured.",
+  unfeature: "Creator unfeatured.",
+};
 
 interface AdminCreatorRow {
   id: string;
@@ -25,13 +35,15 @@ export default function AdminCreatorsPage() {
     "/api/admin/creators",
     { q: debouncedQ, verification }
   );
+  const { showToast } = useToast();
 
   async function runAction(id: string, action: string) {
-    await fetch("/api/admin/creators", {
+    const response = await fetch("/api/admin/creators", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, action }),
     });
+    showToast(response.ok ? ACTION_LABELS[action] ?? "Updated." : "That action failed.", response.ok ? "success" : "error");
     reload();
   }
 

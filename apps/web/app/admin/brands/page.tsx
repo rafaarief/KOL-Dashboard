@@ -3,6 +3,16 @@
 import { useState } from "react";
 import { useDebouncedValue, useFilteredList } from "@/lib/useFilteredList";
 import { OcCard, Pagination, VerificationBadge } from "@/components/oc/primitives";
+import { useToast } from "@/components/oc/Toast";
+
+const ACTION_LABELS: Record<string, string> = {
+  verify: "Brand verified.",
+  reject_verification: "Verification rejected.",
+  suspend: "Brand suspended.",
+  reactivate: "Brand reactivated.",
+  feature: "Brand featured.",
+  unfeature: "Brand unfeatured.",
+};
 
 interface AdminBrandRow {
   id: string;
@@ -25,13 +35,15 @@ export default function AdminBrandsPage() {
     "/api/admin/brands",
     { q: debouncedQ }
   );
+  const { showToast } = useToast();
 
   async function runAction(id: string, action: string) {
-    await fetch("/api/admin/brands", {
+    const response = await fetch("/api/admin/brands", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, action }),
     });
+    showToast(response.ok ? ACTION_LABELS[action] ?? "Updated." : "That action failed.", response.ok ? "success" : "error");
     reload();
   }
 

@@ -38,6 +38,27 @@ export async function GET() {
     .from(schema.reports)
     .where(sql`status = 'open'`);
 
+  // Marketplace liquidity: of campaigns that have closed out their decision process (at
+  // least one accepted or rejected applicant), what fraction of requested creator slots
+  // actually got filled? A low number here means demand (campaigns) outpaces supply
+  // (creators willing/accepted), or vice versa.
+  const liquidityRows = await db.execute(
+    sql`select
+          coalesce(avg(case when creator_count_needed > 0 then least(1.0, creator_count_accepted::numeric / creator_count_needed) end), 0) as fill_rate,
+          count(*) filter (where status = 'published')::int as open_campaigns,
+          count(*) filter (where status = 'filled' or (status = 'published' and creator_count_accepted >= creator_count_needed))::int as filled_campaigns
+        from campaigns`
+  );
+  const liquidity = (liquidityRows as unknown as { fill_rate: string; open_campaigns: number; filled_campaigns: number }[])[0];
+
+  const conversionRows = await db.execute(
+    sql`select
+          count(*)::int as total,
+          count(*) filter (where status = 'accepted')::int as accepted
+        from campaign_applications`
+  );
+  const conversion = (conversionRows as unknown as { total: number; accepted: number }[])[0];
+
   const campaignsByCategory = await db.execute(
     sql`select coalesce(mc.name, 'Uncategorized') as label, count(*)::int as count
         from campaigns c left join marketplace_categories mc on mc.id = c.category_id
@@ -65,6 +86,8 @@ export async function GET() {
       applicationsThisMonth: Number(applicationsThisMonth),
       pendingVerifications: Number(pendingVerifications),
       reportedContent: Number(reportedContent),
+      campaignFillRate: Math.round(Number(liquidity?.fill_rate ?? 0) * 100),
+      applicationConversionRate: conversion?.total ? Math.round((conversion.accepted / conversion.total) * 100) : 0,
     },
     campaignsByCategory,
     creatorsByNiche,

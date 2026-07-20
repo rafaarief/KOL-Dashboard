@@ -3,6 +3,14 @@
 import { useState } from "react";
 import { useDebouncedValue, useFilteredList } from "@/lib/useFilteredList";
 import { CampaignStatusBadge, OcCard, Pagination, formatIDR } from "@/components/oc/primitives";
+import { useToast } from "@/components/oc/Toast";
+
+const ACTION_LABELS: Record<string, string> = {
+  approve: "Campaign approved and published.",
+  reject: "Campaign rejected.",
+  pause: "Campaign paused.",
+  close: "Campaign closed.",
+};
 
 interface AdminCampaignRow {
   id: string;
@@ -35,13 +43,15 @@ export default function AdminCampaignsPage() {
     "/api/admin/campaigns",
     { q: debouncedQ, status }
   );
+  const { showToast } = useToast();
 
   async function runAction(id: string, action: string) {
-    await fetch("/api/admin/campaigns", {
+    const response = await fetch("/api/admin/campaigns", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, action }),
     });
+    showToast(response.ok ? ACTION_LABELS[action] ?? "Updated." : "That action failed.", response.ok ? "success" : "error");
     reload();
   }
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { OcBadge, OcCard } from "@/components/oc/primitives";
+import { useToast } from "@/components/oc/Toast";
 
 interface ReportRow {
   id: string;
@@ -14,6 +15,7 @@ interface ReportRow {
 
 export default function AdminReportsPage() {
   const [rows, setRows] = useState<ReportRow[]>([]);
+  const { showToast } = useToast();
 
   function load() {
     fetch("/api/admin/reports")
@@ -24,11 +26,12 @@ export default function AdminReportsPage() {
   useEffect(load, []);
 
   async function resolve(id: string, status: "resolved" | "dismissed") {
-    await fetch("/api/admin/reports", {
+    const response = await fetch("/api/admin/reports", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, status }),
     });
+    showToast(response.ok ? `Report ${status}.` : "That action failed.", response.ok ? "success" : "error");
     load();
   }
 

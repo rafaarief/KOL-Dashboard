@@ -18,17 +18,19 @@ interface Overview {
     applicationsThisMonth: number;
     pendingVerifications: number;
     reportedContent: number;
+    campaignFillRate: number;
+    applicationConversionRate: number;
   };
   campaignsByCategory: CategoryCount[];
   creatorsByNiche: CategoryCount[];
   creatorsByCity: CategoryCount[];
 }
 
-function StatTile({ label, value }: { label: string; value: number }) {
+function StatTile({ label, value }: { label: string; value: number | string }) {
   return (
     <OcCard className="px-5 py-4">
       <p className="text-xs uppercase tracking-wide text-oc-ink-muted">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-oc-ink">{value.toLocaleString()}</p>
+      <p className="mt-1 text-2xl font-semibold text-oc-ink">{typeof value === "number" ? value.toLocaleString() : value}</p>
     </OcCard>
   );
 }
@@ -88,6 +90,8 @@ export default function AdminOverviewPage() {
             <StatTile label="Applications This Month" value={data.totals.applicationsThisMonth} />
             <StatTile label="Pending Verifications" value={data.totals.pendingVerifications} />
             <StatTile label="Reported Content" value={data.totals.reportedContent} />
+            <StatTile label="Campaign Fill Rate" value={`${data.totals.campaignFillRate}%`} />
+            <StatTile label="Application → Accept Rate" value={`${data.totals.applicationConversionRate}%`} />
           </div>
 
           <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">

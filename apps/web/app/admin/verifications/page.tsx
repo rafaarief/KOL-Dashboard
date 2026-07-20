@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { OcBadge, OcCard } from "@/components/oc/primitives";
+import { useToast } from "@/components/oc/Toast";
 
 interface VerificationRow {
   id: string;
@@ -13,6 +14,7 @@ interface VerificationRow {
 
 export default function AdminVerificationsPage() {
   const [rows, setRows] = useState<VerificationRow[]>([]);
+  const { showToast } = useToast();
 
   function load() {
     fetch("/api/admin/verifications")
@@ -23,11 +25,12 @@ export default function AdminVerificationsPage() {
   useEffect(load, []);
 
   async function decide(id: string, decision: "approved" | "rejected") {
-    await fetch("/api/admin/verifications", {
+    const response = await fetch("/api/admin/verifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, decision }),
     });
+    showToast(response.ok ? `Verification ${decision}.` : "That action failed.", response.ok ? "success" : "error");
     load();
   }
 
