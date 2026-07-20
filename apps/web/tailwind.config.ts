@@ -1,7 +1,10 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
+  // lib/ is included because campaignVisuals.ts builds Tailwind gradient class names
+  // (from-*/to-*) as data outside app/ or components/ — without this, Tailwind's content
+  // scanner never sees those tokens and silently omits them from the generated CSS.
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
   theme: {
     extend: {
       colors: {
@@ -23,6 +26,11 @@ export default {
       },
       backgroundImage: {
         "oc-gradient": "linear-gradient(135deg, #6B46C1 0%, #A78BFA 100%)",
+        // Lavender-tinted mesh for hero/marketing surfaces only — dashboard and admin content
+        // areas intentionally keep the neutral oc-bg token for readability (per design brief:
+        // "public marketplace can be more visually expressive, admin/dashboard stay neutral").
+        "oc-mesh":
+          "radial-gradient(at 15% 20%, rgba(124,58,237,0.16) 0px, transparent 55%), radial-gradient(at 85% 15%, rgba(168,85,247,0.14) 0px, transparent 50%), radial-gradient(at 50% 90%, rgba(139,92,246,0.10) 0px, transparent 55%), #F5F3FF",
       },
       borderRadius: {
         "oc-lg": "24px",
@@ -31,6 +39,7 @@ export default {
       },
       fontFamily: {
         sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
+        display: ["var(--font-jakarta)", "var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
       },
     },
   },

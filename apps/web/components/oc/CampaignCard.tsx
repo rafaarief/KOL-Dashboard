@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { Avatar, BudgetPill, CampaignStatusBadge, CategoryChip, VerificationBadge, formatIDR } from "./primitives";
+import { Clock, MapPin, Users, Wallet } from "lucide-react";
+import { Avatar, CampaignStatusBadge, VerificationBadge, formatIDR } from "./primitives";
+import { campaignVisualFor } from "@/lib/campaignVisuals";
 
 export interface CampaignCardData {
   slug: string;
@@ -21,6 +23,8 @@ export interface CampaignCardData {
   brandLogoUrl: string | null;
   brandVerification: string;
   featured?: boolean;
+  coverImageUrl?: string | null;
+  coverImageAlt?: string | null;
 }
 
 function budgetLabel(c: CampaignCardData): string {
@@ -47,44 +51,87 @@ function urgencyLabel(deadline: Date | string | null): string | null {
 export function CampaignCard({ campaign }: { campaign: CampaignCardData }) {
   const slotsRemaining = Math.max(0, campaign.creatorCountNeeded - campaign.creatorCountAccepted);
   const urgency = urgencyLabel(campaign.applicationDeadline);
+  const visual = campaignVisualFor(campaign.categoryName);
+  const VisualIcon = visual.icon;
 
   return (
-    <div className="relative flex flex-col rounded-oc border border-oc-border bg-oc-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <div className="group relative flex flex-col overflow-hidden rounded-oc border border-oc-border bg-oc-card shadow-sm transition duration-200 hover:-translate-y-1 hover:shadow-lg">
       {campaign.featured && (
-        <span className="absolute -top-2 right-4 inline-flex items-center rounded-full bg-oc-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
+        <span className="absolute left-3 top-3 z-10 inline-flex items-center rounded-full bg-oc-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
           ★ Featured
         </span>
       )}
 
-      <div className="flex items-center gap-2">
-        <Avatar name={campaign.brandName} url={campaign.brandLogoUrl} size={28} />
-        <span className="text-sm font-medium text-oc-ink">{campaign.brandName}</span>
-        <VerificationBadge status={campaign.brandVerification} />
-      </div>
-
-      <Link href={`/campaigns/${campaign.slug}`} className="mt-3 block">
-        <h3 className="text-base font-semibold text-oc-ink line-clamp-2">{campaign.title}</h3>
-      </Link>
-      <p className="mt-1 text-sm text-oc-ink-muted line-clamp-2">{campaign.shortDescription}</p>
-
-      <div className="mt-3 flex flex-wrap gap-2">
-        {campaign.categoryName && <CategoryChip>{campaign.categoryName}</CategoryChip>}
-        <CategoryChip>{campaign.isRemote ? "Remote" : campaign.city ?? "On-site"}</CategoryChip>
-        {urgency && (
-          <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">{urgency}</span>
+      <Link href={`/campaigns/${campaign.slug}`} className="relative block aspect-[16/9] w-full overflow-hidden">
+        {campaign.coverImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- arbitrary admin-entered external
+          // URL; next/image would require a wildcard remotePatterns allowlist for this one field,
+          // so this follows the same plain-<img> convention already used by Avatar/logo rendering.
+          <img
+            src={campaign.coverImageUrl}
+            alt={campaign.coverImageAlt || campaign.title}
+            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+              e.currentTarget.nextElementSibling?.classList.remove("hidden");
+            }}
+          />
+        ) : null}
+        <div
+          className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${visual.gradient} transition duration-300 group-hover:scale-105 ${campaign.coverImageUrl ? "hidden" : ""}`}
+        >
+          <VisualIcon className="h-10 w-10 text-white/70" strokeWidth={1.5} aria-hidden="true" />
+        </div>
+        {campaign.categoryName && (
+          <span className="absolute bottom-2.5 left-2.5 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+            {campaign.categoryName}
+          </span>
         )}
-      </div>
+      </Link>
 
-      <div className="mt-4 flex items-center justify-between">
-        <BudgetPill text={budgetLabel(campaign)} />
-        <span className="text-xs text-oc-ink-muted">{slotsRemaining} of {campaign.creatorCountNeeded} slots left</span>
-      </div>
+      <div className="flex flex-1 flex-col p-5">
+        <div className="flex items-center gap-2">
+          <Avatar name={campaign.brandName} url={campaign.brandLogoUrl} size={24} />
+          <span className="text-sm font-medium text-oc-ink">{campaign.brandName}</span>
+          <VerificationBadge status={campaign.brandVerification} />
+        </div>
 
-      <div className="mt-4 flex items-center justify-between border-t border-oc-border pt-4">
-        <CampaignStatusBadge status={campaign.status} />
-        <Link href={`/campaigns/${campaign.slug}`} className="text-sm font-medium text-oc-700 hover:underline">
-          View Campaign →
+        <Link href={`/campaigns/${campaign.slug}`} className="mt-3 block">
+          <h3 className="font-display text-base font-bold text-oc-ink line-clamp-2">{campaign.title}</h3>
         </Link>
+        <p className="mt-1 text-sm text-oc-ink-muted line-clamp-2">{campaign.shortDescription}</p>
+
+        <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs text-oc-ink-muted">
+          <span className="flex items-center gap-1.5">
+            <Wallet className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            {budgetLabel(campaign)}
+          </span>
+          <span className="flex items-center gap-1.5">
+            <Users className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            {slotsRemaining} of {campaign.creatorCountNeeded} slots
+          </span>
+          <span className="flex items-center gap-1.5">
+            <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            {campaign.isRemote ? "Remote" : (campaign.city ?? "On-site")}
+          </span>
+          {urgency && (
+            <span className="flex items-center gap-1.5 font-medium text-red-600">
+              <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+              {urgency}
+            </span>
+          )}
+        </div>
+
+        <div className="mt-4 flex items-center justify-between border-t border-oc-border pt-4">
+          <CampaignStatusBadge status={campaign.status} />
+          <Link
+            href={`/campaigns/${campaign.slug}`}
+            className="inline-flex items-center gap-1 text-sm font-medium text-oc-700 transition group-hover:gap-1.5 hover:underline"
+          >
+            View Campaign <span aria-hidden="true">→</span>
+          </Link>
+        </div>
       </div>
     </div>
   );

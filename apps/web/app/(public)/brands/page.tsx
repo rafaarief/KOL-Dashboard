@@ -27,7 +27,7 @@ export default async function BrandsDirectoryPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-oc-ink">Browse Brands</h1>
+      <h1 className="font-display text-2xl font-extrabold text-oc-ink">Browse Brands</h1>
       <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} brands collaborating with creators.</p>
 
       <form method="GET" className="mt-6 flex flex-wrap gap-3">

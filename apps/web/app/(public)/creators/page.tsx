@@ -30,7 +30,7 @@ export default async function CreatorsDirectoryPage({
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-oc-ink">Browse Creators</h1>
+      <h1 className="font-display text-2xl font-extrabold text-oc-ink">Browse Creators</h1>
       <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} creators available for collaboration.</p>
 
       <form method="GET" className="mt-6 flex flex-wrap gap-3">

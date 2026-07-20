@@ -4,6 +4,7 @@ import { getDb, schema } from "@/lib/db";
 import { CampaignCard } from "@/components/oc/CampaignCard";
 import { CreatorCard } from "@/components/oc/CreatorCard";
 import { BrandCard } from "@/components/oc/BrandCard";
+import { CountUp } from "@/components/oc/CountUp";
 
 export const dynamic = "force-dynamic";
 
@@ -47,6 +48,8 @@ export default async function LandingPage() {
         applicationDeadline: schema.campaigns.applicationDeadline,
         compensationType: schema.campaigns.compensationType,
         categoryName: schema.marketplaceCategories.name,
+        coverImageUrl: schema.campaigns.coverImageUrl,
+        coverImageAlt: schema.campaigns.coverImageAlt,
         brandName: schema.brandProfiles.brandName,
         brandLogoUrl: schema.brandProfiles.logoUrl,
         brandVerification: schema.brandProfiles.verificationStatus,
@@ -108,7 +111,7 @@ export default async function LandingPage() {
       {/* Hero */}
       <section className="overflow-hidden rounded-oc-lg bg-oc-gradient px-6 py-14 text-center text-white sm:px-12">
         <p className="text-xs font-semibold uppercase tracking-wide text-white/80">Indonesia&apos;s Creator Collaboration Network</p>
-        <h1 className="mx-auto mt-3 max-w-2xl text-3xl font-bold leading-tight sm:text-4xl">
+        <h1 className="mx-auto mt-3 max-w-2xl font-display text-3xl font-extrabold leading-tight sm:text-4xl">
           Find Brands. Find Creators. Collaborate Better.
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-sm text-white/90">
@@ -156,7 +159,9 @@ export default async function LandingPage() {
           { label: "Applications Submitted", value: Number(totalApplications) },
         ].map((stat) => (
           <div key={stat.label} className="rounded-oc border border-oc-border bg-oc-card p-4 text-center">
-            <p className="text-2xl font-bold text-oc-700">{stat.value.toLocaleString()}</p>
+            <p className="font-display text-2xl font-extrabold text-oc-700">
+              <CountUp value={stat.value} />
+            </p>
             <p className="mt-1 text-xs text-oc-ink-muted">{stat.label}</p>
           </div>
         ))}

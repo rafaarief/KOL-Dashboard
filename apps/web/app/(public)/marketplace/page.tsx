@@ -29,7 +29,7 @@ export default async function MarketplacePage({
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-oc-ink">Marketplace</h1>
+      <h1 className="font-display text-2xl font-extrabold text-oc-ink">Marketplace</h1>
       <p className="mt-1 text-sm text-oc-ink-muted">One place to search campaigns, creators, and brands.</p>
 
       <form method="GET" className="mt-6">

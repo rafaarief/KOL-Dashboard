@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { asc } from "drizzle-orm";
+import { getDb, schema } from "@/lib/db";
 import { listPublishedCampaigns } from "@/lib/marketplaceQueries";
-import { withPage } from "@/lib/searchParamsHref";
+import { withPage, withToggledParam } from "@/lib/searchParamsHref";
 import { CampaignCard } from "@/components/oc/CampaignCard";
 import { EmptyState } from "@/components/oc/primitives";
 
@@ -26,11 +28,14 @@ export default async function CampaignsPage({
     page: typeof searchParams.page === "string" ? searchParams.page : undefined,
   };
 
-  const { rows, total, page, totalPages } = await listPublishedCampaigns(params);
+  const [{ rows, total, page, totalPages }, categories] = await Promise.all([
+    listPublishedCampaigns(params),
+    getDb().select({ slug: schema.marketplaceCategories.slug, name: schema.marketplaceCategories.name }).from(schema.marketplaceCategories).orderBy(asc(schema.marketplaceCategories.name)),
+  ]);
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-oc-ink">Browse Campaigns</h1>
+      <h1 className="font-display text-2xl font-extrabold text-oc-ink">Browse Campaigns</h1>
       <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} open campaigns from brands across Indonesia.</p>
 
       <form method="GET" className="mt-6 flex flex-wrap gap-3">
@@ -61,6 +66,29 @@ export default async function CampaignsPage({
           Search
         </button>
       </form>
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        {categories.map((c) => {
+          const active = params.category === c.slug;
+          return (
+            <Link
+              key={c.slug}
+              href={withToggledParam(searchParams, "category", c.slug)}
+              aria-pressed={active}
+              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                active ? "border-oc-600 bg-oc-600 text-white" : "border-oc-border bg-oc-card text-oc-ink-muted hover:border-oc-400 hover:text-oc-ink"
+              }`}
+            >
+              {c.name}
+            </Link>
+          );
+        })}
+        {params.category && (
+          <Link href={withToggledParam(searchParams, "category", params.category)} className="text-xs font-medium text-oc-ink-muted hover:underline">
+            Clear filter
+          </Link>
+        )}
+      </div>
 
       {rows.length === 0 ? (
         <div className="mt-8">

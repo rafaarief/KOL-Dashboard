@@ -54,6 +54,8 @@ export async function listPublishedCampaigns(params: CampaignListParams) {
       applicationDeadline: schema.campaigns.applicationDeadline,
       compensationType: schema.campaigns.compensationType,
       categoryName: schema.marketplaceCategories.name,
+      coverImageUrl: schema.campaigns.coverImageUrl,
+      coverImageAlt: schema.campaigns.coverImageAlt,
       brandName: schema.brandProfiles.brandName,
       brandLogoUrl: schema.brandProfiles.logoUrl,
       brandVerification: schema.brandProfiles.verificationStatus,

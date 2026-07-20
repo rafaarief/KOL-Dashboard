@@ -52,6 +52,8 @@ export default async function BrandProfilePage({ params }: { params: { slug: str
       applicationDeadline: schema.campaigns.applicationDeadline,
       compensationType: schema.campaigns.compensationType,
       categoryName: schema.marketplaceCategories.name,
+      coverImageUrl: schema.campaigns.coverImageUrl,
+      coverImageAlt: schema.campaigns.coverImageAlt,
     })
     .from(schema.campaigns)
     .leftJoin(schema.marketplaceCategories, eq(schema.marketplaceCategories.id, schema.campaigns.categoryId))
@@ -74,8 +76,8 @@ export default async function BrandProfilePage({ params }: { params: { slug: str
   const [responsiveness] = (await db.execute(
     sql`select
           count(*)::int as total,
-          count(*) filter (where status <> 'submitted')::int as reviewed,
-          avg(extract(epoch from (updated_at - created_at)) / 86400) filter (where status <> 'submitted') as avg_response_days
+          count(*) filter (where ca.status <> 'submitted')::int as reviewed,
+          avg(extract(epoch from (ca.updated_at - ca.created_at)) / 86400) filter (where ca.status <> 'submitted') as avg_response_days
         from campaign_applications ca
         join campaigns c on c.id = ca.campaign_id
         where c.brand_profile_id = ${brand.id}`
