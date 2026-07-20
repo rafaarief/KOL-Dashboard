@@ -64,7 +64,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
   const db = getDb();
   const session = await auth();
 
-  const [socialAccounts, rateCards, portfolioItems, brandExperiences, similar] = await Promise.all([
+  const [socialAccounts, rateCards, portfolioItems, brandExperiences, similar, trackRecordRows] = await Promise.all([
     db
       .select({ id: schema.creatorSocialAccounts.id, platformName: schema.platforms.name, username: schema.creatorSocialAccounts.username, followerCount: schema.creatorSocialAccounts.followerCount, averageViews: schema.creatorSocialAccounts.averageViews, engagementRate: schema.creatorSocialAccounts.engagementRate, profileUrl: schema.creatorSocialAccounts.profileUrl })
       .from(schema.creatorSocialAccounts)
@@ -93,9 +93,26 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
           .where(and(eq(schema.creatorProfiles.primaryNicheId, creator.primaryNicheId), ne(schema.creatorProfiles.id, creator.id), eq(schema.creatorProfiles.status, "active")))
           .limit(4)
       : Promise.resolve([]),
+    // Real collaboration track record, not a fabricated stat — derived from this creator's
+    // own campaign_applications rows. Response time is approximated as the average gap
+    // between application submission and the brand's first status change away from
+    // "submitted" (there's no dedicated "viewed_at" timestamp in the schema).
+    db.execute(
+      sql`select
+            count(*)::int as total,
+            count(*) filter (where status = 'accepted')::int as accepted,
+            count(*) filter (where status = 'rejected')::int as rejected,
+            avg(extract(epoch from (updated_at - created_at)) / 86400) filter (where status <> 'submitted') as avg_response_days
+          from campaign_applications where creator_profile_id = ${creator.id}`
+    ),
   ]);
 
   const totalFollowers = socialAccounts.reduce((sum, acc) => sum + (acc.followerCount ?? 0), 0);
+
+  const trackRecord = (trackRecordRows as unknown as { total: number; accepted: number; rejected: number; avg_response_days: string | null }[])[0];
+  const decidedApplications = (trackRecord?.accepted ?? 0) + (trackRecord?.rejected ?? 0);
+  const acceptanceRate = decidedApplications > 0 ? Math.round(((trackRecord?.accepted ?? 0) / decidedApplications) * 100) : null;
+  const avgResponseDays = trackRecord?.avg_response_days ? Math.round(Number(trackRecord.avg_response_days) * 10) / 10 : null;
 
   let alreadySaved = false;
   if (session?.user.role === "brand") {
@@ -129,6 +146,11 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
               @{creator.username}
               {creator.city ? ` · ${creator.city}` : ""}
             </p>
+            <p className="mt-1 text-sm font-medium text-oc-700">
+              {[creator.primaryNicheName ? `${creator.primaryNicheName} Creator` : "Creator", creator.city, socialAccounts[0]?.platformName]
+                .filter(Boolean)
+                .join(" • ")}
+            </p>
           </div>
         </div>
 
@@ -154,6 +176,26 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
             ))}
           </div>
         </section>
+
+        {trackRecord && trackRecord.total > 0 && (
+          <section className="mt-6">
+            <h2 className="text-sm font-semibold text-oc-ink">Collaboration Track Record</h2>
+            <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+              <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+                <p className="text-lg font-semibold text-oc-ink">{acceptanceRate !== null ? `${acceptanceRate}%` : "—"}</p>
+                <p className="text-xs text-oc-ink-muted">Acceptance Rate</p>
+              </div>
+              <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+                <p className="text-lg font-semibold text-oc-ink">{trackRecord.accepted}</p>
+                <p className="text-xs text-oc-ink-muted">Accepted Collaborations</p>
+              </div>
+              <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center">
+                <p className="text-lg font-semibold text-oc-ink">{avgResponseDays !== null ? `~${avgResponseDays}d` : "—"}</p>
+                <p className="text-xs text-oc-ink-muted">Avg. Response Time</p>
+              </div>
+            </div>
+          </section>
+        )}
 
         <section className="mt-6">
           <h2 className="text-sm font-semibold text-oc-ink">Platforms</h2>

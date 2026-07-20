@@ -28,12 +28,12 @@ export async function listPublishedCampaigns(params: CampaignListParams) {
   if (params.minBudget) conditions.push(gte(schema.campaigns.budgetPerCreator, params.minBudget));
   if (params.maxBudget) conditions.push(lte(schema.campaigns.budgetPerCreator, params.maxBudget));
 
-  const sortColumn =
+  const sortColumns =
     params.sort === "highest_budget"
-      ? desc(schema.campaigns.budgetPerCreator)
+      ? [desc(schema.campaigns.budgetPerCreator)]
       : params.sort === "closing_soon"
-        ? asc(schema.campaigns.applicationDeadline)
-        : desc(schema.campaigns.publishedAt);
+        ? [asc(schema.campaigns.applicationDeadline)]
+        : [desc(schema.campaigns.featured), desc(schema.campaigns.publishedAt)];
 
   const whereClause = and(...conditions);
 
@@ -57,12 +57,13 @@ export async function listPublishedCampaigns(params: CampaignListParams) {
       brandName: schema.brandProfiles.brandName,
       brandLogoUrl: schema.brandProfiles.logoUrl,
       brandVerification: schema.brandProfiles.verificationStatus,
+      featured: schema.campaigns.featured,
     })
     .from(schema.campaigns)
     .innerJoin(schema.brandProfiles, eq(schema.brandProfiles.id, schema.campaigns.brandProfileId))
     .leftJoin(schema.marketplaceCategories, eq(schema.marketplaceCategories.id, schema.campaigns.categoryId))
     .where(whereClause)
-    .orderBy(sortColumn)
+    .orderBy(...sortColumns)
     .limit(PAGE_SIZE)
     .offset((page - 1) * PAGE_SIZE);
 
@@ -100,8 +101,10 @@ export async function listActiveCreators(params: CreatorListParams) {
   if (params.city) conditions.push(eq(schema.creatorProfiles.city, params.city));
   if (params.availability) conditions.push(eq(schema.creatorProfiles.availabilityStatus, params.availability));
 
-  const sortColumn =
-    params.sort === "lowest_rate" ? asc(schema.creatorProfiles.minimumBudget) : desc(schema.creatorProfiles.createdAt);
+  const sortColumns =
+    params.sort === "lowest_rate"
+      ? [asc(schema.creatorProfiles.minimumBudget)]
+      : [desc(schema.creatorProfiles.featured), desc(schema.creatorProfiles.createdAt)];
 
   const whereClause = and(...conditions);
   const followersSubquery = sql<number>`(select coalesce(sum(csa.follower_count), 0) from creator_social_accounts csa where csa.creator_profile_id = creator_profiles.id)`;
@@ -119,13 +122,14 @@ export async function listActiveCreators(params: CreatorListParams) {
       monthlyCapacity: schema.creatorProfiles.monthlyCapacity,
       primaryNicheName: schema.niches.name,
       totalFollowers: followersSubquery,
+      featured: schema.creatorProfiles.featured,
     })
     .from(schema.creatorProfiles)
     .leftJoin(schema.niches, eq(schema.niches.id, schema.creatorProfiles.primaryNicheId))
     .where(
       params.minFollowers ? and(whereClause, gte(followersSubquery, Number.parseInt(params.minFollowers, 10))) : whereClause
     )
-    .orderBy(params.sort === "highest_followers" ? desc(followersSubquery) : sortColumn)
+    .orderBy(...(params.sort === "highest_followers" ? [desc(followersSubquery)] : sortColumns))
     .limit(PAGE_SIZE)
     .offset((page - 1) * PAGE_SIZE);
 
@@ -165,10 +169,11 @@ export async function listActiveBrands(params: BrandListParams) {
       logoUrl: schema.brandProfiles.logoUrl,
       verificationStatus: schema.brandProfiles.verificationStatus,
       activeCampaignCount: sql<number>`(select count(*) from campaigns c where c.brand_profile_id = brand_profiles.id and c.status = 'published')`,
+      featured: schema.brandProfiles.featured,
     })
     .from(schema.brandProfiles)
     .where(whereClause)
-    .orderBy(desc(schema.brandProfiles.createdAt))
+    .orderBy(desc(schema.brandProfiles.featured), desc(schema.brandProfiles.createdAt))
     .limit(PAGE_SIZE)
     .offset((page - 1) * PAGE_SIZE);
 

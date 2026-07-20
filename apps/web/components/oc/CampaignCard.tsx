@@ -20,6 +20,7 @@ export interface CampaignCardData {
   brandName: string;
   brandLogoUrl: string | null;
   brandVerification: string;
+  featured?: boolean;
 }
 
 function budgetLabel(c: CampaignCardData): string {
@@ -31,17 +32,30 @@ function budgetLabel(c: CampaignCardData): string {
   return "Negotiable";
 }
 
-function isClosingSoon(deadline: Date | string | null): boolean {
-  if (!deadline) return false;
-  const days = (new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-  return days >= 0 && days <= 5;
+/** Returns a human urgency string ("Today", "1 day left", "3 days left") only inside the
+ * closing-soon window, or null otherwise — used instead of a plain boolean badge so the
+ * card actually communicates how urgent "soon" is. */
+function urgencyLabel(deadline: Date | string | null): string | null {
+  if (!deadline) return null;
+  const days = Math.ceil((new Date(deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  if (days < 0 || days > 5) return null;
+  if (days === 0) return "Closes today";
+  if (days === 1) return "1 day left";
+  return `${days} days left`;
 }
 
 export function CampaignCard({ campaign }: { campaign: CampaignCardData }) {
   const slotsRemaining = Math.max(0, campaign.creatorCountNeeded - campaign.creatorCountAccepted);
+  const urgency = urgencyLabel(campaign.applicationDeadline);
 
   return (
-    <div className="flex flex-col rounded-oc border border-oc-border bg-oc-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <div className="relative flex flex-col rounded-oc border border-oc-border bg-oc-card p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+      {campaign.featured && (
+        <span className="absolute -top-2 right-4 inline-flex items-center rounded-full bg-oc-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
+          ★ Featured
+        </span>
+      )}
+
       <div className="flex items-center gap-2">
         <Avatar name={campaign.brandName} url={campaign.brandLogoUrl} size={28} />
         <span className="text-sm font-medium text-oc-ink">{campaign.brandName}</span>
@@ -56,10 +70,8 @@ export function CampaignCard({ campaign }: { campaign: CampaignCardData }) {
       <div className="mt-3 flex flex-wrap gap-2">
         {campaign.categoryName && <CategoryChip>{campaign.categoryName}</CategoryChip>}
         <CategoryChip>{campaign.isRemote ? "Remote" : campaign.city ?? "On-site"}</CategoryChip>
-        {isClosingSoon(campaign.applicationDeadline) && (
-          <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">
-            Closing Soon
-          </span>
+        {urgency && (
+          <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-700">{urgency}</span>
         )}
       </div>
 

@@ -50,6 +50,7 @@ export default async function LandingPage() {
         brandName: schema.brandProfiles.brandName,
         brandLogoUrl: schema.brandProfiles.logoUrl,
         brandVerification: schema.brandProfiles.verificationStatus,
+        featured: schema.campaigns.featured,
       })
       .from(schema.campaigns)
       .innerJoin(schema.brandProfiles, eq(schema.brandProfiles.id, schema.campaigns.brandProfileId))
@@ -70,6 +71,7 @@ export default async function LandingPage() {
         monthlyCapacity: schema.creatorProfiles.monthlyCapacity,
         primaryNicheName: schema.niches.name,
         totalFollowers: sql<number>`(select coalesce(sum(csa.follower_count), 0) from creator_social_accounts csa where csa.creator_profile_id = creator_profiles.id)`,
+        featured: schema.creatorProfiles.featured,
       })
       .from(schema.creatorProfiles)
       .leftJoin(schema.niches, eq(schema.niches.id, schema.creatorProfiles.primaryNicheId))
@@ -85,6 +87,7 @@ export default async function LandingPage() {
         logoUrl: schema.brandProfiles.logoUrl,
         verificationStatus: schema.brandProfiles.verificationStatus,
         activeCampaignCount: sql<number>`(select count(*) from campaigns c where c.brand_profile_id = brand_profiles.id and c.status = 'published')`,
+        featured: schema.brandProfiles.featured,
       })
       .from(schema.brandProfiles)
       .where(eq(schema.brandProfiles.status, "active"))
