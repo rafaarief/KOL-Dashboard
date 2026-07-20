@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useDebouncedValue, useFilteredList } from "@/lib/useFilteredList";
-import { AvailabilityBadge, OcCard, Pagination, VerificationBadge } from "@/components/oc/primitives";
+import { Avatar, AvailabilityBadge, OcCard, Pagination, VerificationBadge } from "@/components/oc/primitives";
 import { useToast } from "@/components/oc/Toast";
 
 const ACTION_LABELS: Record<string, string> = {
@@ -18,6 +19,7 @@ interface AdminCreatorRow {
   id: string;
   username: string;
   displayName: string;
+  avatarUrl: string | null;
   city: string | null;
   email: string;
   availabilityStatus: string;
@@ -49,8 +51,15 @@ export default function AdminCreatorsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-oc-ink">Creators</h1>
-      <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} creator accounts.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-oc-ink">Creators</h1>
+          <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} creator accounts.</p>
+        </div>
+        <a href="/api/admin/creators?format=csv" className="rounded-oc-input border border-oc-border px-3.5 py-1.5 text-sm hover:bg-oc-bg">
+          Export CSV
+        </a>
+      </div>
       {error && <div className="mt-4 rounded-oc border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       <div className="mt-4 flex flex-wrap gap-3">
@@ -90,8 +99,15 @@ export default function AdminCreatorsPage() {
             {rows.map((row) => (
               <tr key={row.id}>
                 <td className="px-4 py-3">
-                  <p className="font-medium text-oc-ink">{row.displayName}</p>
-                  <p className="text-xs text-oc-ink-muted">@{row.username}</p>
+                  <div className="flex items-center gap-2.5">
+                    <Avatar name={row.displayName} url={row.avatarUrl} size={32} />
+                    <div>
+                      <Link href={`/admin/creators/${row.id}`} className="font-medium text-oc-ink hover:underline">
+                        {row.displayName}
+                      </Link>
+                      <p className="text-xs text-oc-ink-muted">@{row.username}</p>
+                    </div>
+                  </div>
                 </td>
                 <td className="px-4 py-3 text-oc-ink-muted">{row.email}</td>
                 <td className="px-4 py-3">{row.city ?? "—"}</td>

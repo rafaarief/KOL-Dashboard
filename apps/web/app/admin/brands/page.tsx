@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useDebouncedValue, useFilteredList } from "@/lib/useFilteredList";
-import { OcCard, Pagination, VerificationBadge } from "@/components/oc/primitives";
+import { Avatar, OcCard, Pagination, VerificationBadge } from "@/components/oc/primitives";
 import { useToast } from "@/components/oc/Toast";
 
 const ACTION_LABELS: Record<string, string> = {
@@ -18,6 +19,7 @@ interface AdminBrandRow {
   id: string;
   slug: string;
   brandName: string;
+  logoUrl: string | null;
   industry: string | null;
   city: string | null;
   email: string;
@@ -49,8 +51,15 @@ export default function AdminBrandsPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-oc-ink">Brands</h1>
-      <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} brand accounts.</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-oc-ink">Brands</h1>
+          <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} brand accounts.</p>
+        </div>
+        <a href="/api/admin/brands?format=csv" className="rounded-oc-input border border-oc-border px-3.5 py-1.5 text-sm hover:bg-oc-bg">
+          Export CSV
+        </a>
+      </div>
       {error && <div className="mt-4 rounded-oc border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
 
       <div className="mt-4 flex flex-wrap gap-3">
@@ -79,7 +88,14 @@ export default function AdminBrandsPage() {
           <tbody className="divide-y divide-oc-border">
             {rows.map((row) => (
               <tr key={row.id}>
-                <td className="px-4 py-3 font-medium text-oc-ink">{row.brandName}</td>
+                <td className="px-4 py-3 font-medium text-oc-ink">
+                  <div className="flex items-center gap-2.5">
+                    <Avatar name={row.brandName} url={row.logoUrl} size={32} />
+                    <Link href={`/admin/brands/${row.id}`} className="hover:underline">
+                      {row.brandName}
+                    </Link>
+                  </div>
+                </td>
                 <td className="px-4 py-3">{row.industry ?? "—"}</td>
                 <td className="px-4 py-3 text-oc-ink-muted">{row.email}</td>
                 <td className="px-4 py-3">{row.city ?? "—"}</td>
