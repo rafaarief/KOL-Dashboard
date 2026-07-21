@@ -24,10 +24,10 @@ export default function BrandSettingsPage() {
       </OcCard>
 
       <OcCard className="mt-4 p-5">
-        <p className="text-sm font-medium text-oc-ink">Know a creator you&apos;d like to work with?</p>
+        <p className="text-sm font-medium text-oc-ink">Know a KOL you&apos;d like to work with?</p>
         <p className="mt-1 text-xs text-oc-ink-muted">Invite them to build a professional profile on OpenCollab.</p>
         <div className="mt-3">
-          <ShareButton path="/register/creator" shareTitle="Build your creator profile on OpenCollab" label="Invite a Creator" copiedLabel="Copied" />
+          <ShareButton path="/register/creator" shareTitle="Build your KOL profile on OpenCollab" label="Invite a KOL" copiedLabel="Copied" />
         </div>
       </OcCard>
     </div>

@@ -7,7 +7,7 @@ import { signOut, useSession } from "next-auth/react";
 const LINKS = [
   { href: "/marketplace", label: "Marketplace" },
   { href: "/campaigns", label: "Campaigns" },
-  { href: "/creators", label: "Creators" },
+  { href: "/creators", label: "KOLs" },
   { href: "/brands", label: "Brands" },
   { href: "/how-it-works", label: "How It Works" },
 ];

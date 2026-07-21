@@ -7,6 +7,7 @@ import { SaveButton } from "@/components/oc/SaveButton";
 import { ShareProfileButton } from "@/components/oc/ShareProfileButton";
 import { CreatorCard } from "@/components/oc/CreatorCard";
 import { Avatar, AvailabilityBadge, CategoryChip, VerificationBadge, formatCompactNumber, formatIDR, tileForSeed } from "@/components/oc/primitives";
+import { KOL_SEGMENT_LABELS, kolSegmentFromCount } from "@/lib/kolSegment";
 
 export const dynamic = "force-dynamic";
 
@@ -55,11 +56,11 @@ async function loadCreator(username: string) {
 
 export async function generateMetadata({ params }: { params: { username: string } }): Promise<Metadata> {
   const creator = await loadCreator(params.username);
-  if (!creator) return { title: "Creator not found" };
+  if (!creator) return { title: "KOL not found" };
 
   const title = `${creator.displayName} (@${creator.username})`;
   const description =
-    creator.headline || creator.bio || `${creator.displayName} is a creator on OpenCollab.id, Indonesia's professional network for creator collaborations.`;
+    creator.headline || creator.bio || `${creator.displayName} is a KOL on OpenCollab.id, Indonesia's professional network for KOL collaborations.`;
 
   const ogImage = `/api/og/creators/${creator.username}`;
 
@@ -142,6 +143,11 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
   ]);
 
   const totalFollowers = socialAccounts.reduce((sum, acc) => sum + (acc.followerCount ?? 0), 0);
+  // Segment tracks whichever platform is the KOL's strongest (never summed) — a KOL with 15k on
+  // Instagram but only 9k on TikTok is a Mikro KOL off the 15k, not off a blended 24k.
+  const igFollowers = socialAccounts.filter((a) => a.platformName === "Instagram").reduce((sum, acc) => sum + (acc.followerCount ?? 0), 0);
+  const tiktokFollowers = socialAccounts.filter((a) => a.platformName === "TikTok").reduce((sum, acc) => sum + (acc.followerCount ?? 0), 0);
+  const kolSegment = kolSegmentFromCount(Math.max(igFollowers, tiktokFollowers));
 
   const trackRecord = (trackRecordRows as unknown as { total: number; accepted: number; rejected: number; avg_response_days: string | null }[])[0];
   const decidedApplications = (trackRecord?.accepted ?? 0) + (trackRecord?.rejected ?? 0);
@@ -159,8 +165,8 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
   }
 
   const preferences = [
-    creator.acceptsPaid && "Paid",
-    creator.acceptsBarter && "Barter",
+    creator.acceptsPaid && "Has KOL Fee",
+    creator.acceptsBarter && "Open for Barter Value",
     creator.acceptsAffiliate && "Affiliate",
     creator.acceptsEventAttendance && "Event Attendance",
     creator.acceptsAmbassador && "Brand Ambassador",
@@ -168,7 +174,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
 
   const headline =
     creator.headline ||
-    [creator.primaryNicheName ? `${creator.primaryNicheName} Creator` : "Creator", creator.city, socialAccounts[0]?.platformName].filter(Boolean).join(" • ");
+    [creator.primaryNicheName ? `${creator.primaryNicheName} KOL` : "KOL", creator.city, socialAccounts[0]?.platformName].filter(Boolean).join(" • ");
 
   const languages = Array.isArray(creator.languages) ? (creator.languages as string[]) : [];
 
@@ -212,6 +218,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
               {creator.featured && (
                 <span className="rounded-full bg-oc-dark px-3.5 py-1.5 text-xs font-semibold text-white">★ Featured</span>
               )}
+              <span className="rounded-full bg-oc-dark px-3.5 py-1.5 text-xs font-semibold text-white">{KOL_SEGMENT_LABELS[kolSegment]}</span>
               {creator.primaryNicheName && (
                 <span className="rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-oc-ink">{creator.primaryNicheName}</span>
               )}
@@ -289,7 +296,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
         )}
 
         <section className="mt-6">
-          <h2 className="text-sm font-semibold text-oc-ink">Creator Statistics</h2>
+          <h2 className="text-sm font-semibold text-oc-ink">KOL Statistics</h2>
           <div className="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center shadow-oc-sm">
               <p className="text-lg font-semibold text-oc-ink">{formatCompactNumber(totalFollowers)}</p>
@@ -398,7 +405,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
 
         {similar.length > 0 && (
           <section className="mt-10">
-            <h2 className="text-sm font-semibold text-oc-ink">Similar Creators</h2>
+            <h2 className="text-sm font-semibold text-oc-ink">Similar KOLs</h2>
             <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
               {similar.map((c, i) => (
                 <CreatorCard key={c.username} creator={c} index={i} />
@@ -417,7 +424,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
             </p>
           )}
           <p className="mt-3 text-sm font-semibold text-oc-ink">
-            {creator.minimumBudget ? `From ${formatIDR(creator.minimumBudget)}` : "Contact for rate"}
+            {creator.minimumBudget ? `From ${formatIDR(creator.minimumBudget)}` : creator.acceptsBarter ? "Open for Barter Value" : "Contact for rate"}
           </p>
 
           {preferences.length > 0 && (
@@ -436,7 +443,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
 
           {session?.user.role === "brand" && (
             <div className="mt-4 flex flex-col gap-2">
-              <SaveButton endpoint="/api/brand/saved-creators" targetId={creator.id} initialSaved={alreadySaved} label="Save Creator" />
+              <SaveButton endpoint="/api/brand/saved-creators" targetId={creator.id} initialSaved={alreadySaved} label="Save KOL" />
             </div>
           )}
         </div>

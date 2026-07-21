@@ -10,6 +10,11 @@ interface RateCard {
   visibility: string;
 }
 
+// Common breakdown items brands ask for — single deliverables plus a couple of pre-bundled
+// combos KOLs frequently sell as one line item. Free text still works for anything else.
+const SINGLE_DELIVERABLE_PRESETS = ["Instagram Story", "Instagram Feed Post", "Instagram Reels", "TikTok Video", "Brand Visit / Event Appearance"];
+const PACKAGE_DELIVERABLE_PRESETS = ["TikTok Video + Mirror IG Reels", "All-in Package (Story + Feed + Reels + TikTok)"];
+
 export default function CreatorRatesPage() {
   const [rates, setRates] = useState<RateCard[]>([]);
   const [deliverableType, setDeliverableType] = useState("");
@@ -45,6 +50,9 @@ export default function CreatorRatesPage() {
   return (
     <div className="max-w-xl">
       <h1 className="text-lg font-semibold text-oc-ink">Rate Card</h1>
+      <p className="mt-1 text-xs text-oc-ink-muted">
+        Break your KOL Fee down by deliverable — brands can search by fee, so a clear breakdown gets you shortlisted faster.
+      </p>
 
       <OcCard className="mt-4 divide-y divide-oc-border">
         {rates.map((rate) => (
@@ -71,10 +79,42 @@ export default function CreatorRatesPage() {
       </OcCard>
 
       <form onSubmit={handleAdd} className="mt-4 space-y-3 rounded-oc border border-oc-border bg-oc-card p-4">
+        <div>
+          <p className="text-xs font-medium text-oc-ink-muted">Single deliverables</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {SINGLE_DELIVERABLE_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setDeliverableType(preset)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                  deliverableType === preset ? "border-oc-600 bg-oc-600 text-white" : "border-oc-border bg-oc-bg text-oc-ink hover:border-oc-600"
+                }`}
+              >
+                {preset}
+              </button>
+            ))}
+          </div>
+          <p className="mt-2.5 text-xs font-medium text-oc-ink-muted">Packages</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {PACKAGE_DELIVERABLE_PRESETS.map((preset) => (
+              <button
+                key={preset}
+                type="button"
+                onClick={() => setDeliverableType(preset)}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                  deliverableType === preset ? "border-oc-600 bg-oc-600 text-white" : "border-oc-border bg-oc-bg text-oc-ink hover:border-oc-600"
+                }`}
+              >
+                {preset}
+              </button>
+            ))}
+          </div>
+        </div>
         <input
           value={deliverableType}
           onChange={(e) => setDeliverableType(e.target.value)}
-          placeholder="e.g. TikTok video"
+          placeholder="e.g. TikTok video, or type your own package"
           className="w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm"
         />
         <div className="flex gap-2">

@@ -70,7 +70,7 @@ export default function CreatorProfilePage() {
   return (
     <div className="max-w-xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold text-oc-ink">Professional Creator Profile</h1>
+        <h1 className="text-lg font-semibold text-oc-ink">Professional KOL Profile</h1>
         <ShareProfileButton username={profile.username} />
       </div>
       <p className="mt-1 text-sm text-oc-ink-muted">
@@ -93,7 +93,7 @@ export default function CreatorProfilePage() {
             <input
               value={profile.headline ?? ""}
               onChange={(e) => setProfile({ ...profile, headline: e.target.value })}
-              placeholder="e.g. Lifestyle Creator • Jakarta • Photography"
+              placeholder="e.g. Lifestyle KOL • Jakarta • Photography"
               maxLength={120}
               className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm"
             />

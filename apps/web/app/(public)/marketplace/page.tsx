@@ -10,12 +10,12 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Marketplace",
-  description: "Search campaigns, creators, and brands in one place on OpenCollab.id.",
+  description: "Search campaigns, KOLs, and brands in one place on OpenCollab.id.",
 };
 
 const TABS = [
   { value: "campaigns", label: "Campaigns" },
-  { value: "creators", label: "Creators" },
+  { value: "creators", label: "KOLs" },
   { value: "brands", label: "Brands" },
 ] as const;
 
@@ -31,14 +31,14 @@ export default async function MarketplacePage({
     <div>
       <p className="text-xs font-semibold uppercase tracking-wide text-oc-600">Search everything</p>
       <h1 className="mt-1 font-display text-2xl font-extrabold text-oc-ink sm:text-3xl">Marketplace</h1>
-      <p className="mt-1 text-sm text-oc-ink-muted">One place to search campaigns, creators, and brands.</p>
+      <p className="mt-1 text-sm text-oc-ink-muted">One place to search campaigns, KOLs, and brands.</p>
 
       <form method="GET" className="mt-6 flex rounded-full border border-oc-border bg-oc-card p-1.5 shadow-oc-sm">
         <input type="hidden" name="tab" value={tab} />
         <input
           name="q"
           defaultValue={q}
-          placeholder="Search campaigns, creators, brands, niches, or locations"
+          placeholder="Search campaigns, KOLs, brands, niches, or locations"
           className="w-full rounded-full bg-transparent px-4 py-2.5 text-sm outline-none"
         />
       </form>
@@ -94,10 +94,10 @@ async function CreatorsTab({ q }: { q?: string }) {
   const { rows, total } = await listActiveCreators({ q });
   return (
     <>
-      <p className="text-xs text-oc-ink-muted">{total.toLocaleString()} creators</p>
+      <p className="text-xs text-oc-ink-muted">{total.toLocaleString()} KOLs</p>
       {rows.length === 0 ? (
         <div className="mt-4">
-          <EmptyState title="No creators matched" />
+          <EmptyState title="No KOLs matched" />
         </div>
       ) : (
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

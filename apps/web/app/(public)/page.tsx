@@ -7,6 +7,7 @@ import { BrandCard } from "@/components/oc/BrandCard";
 import { CountUp } from "@/components/oc/CountUp";
 import { formatIDR } from "@/components/oc/primitives";
 import { campaignVisualFor } from "@/lib/campaignVisuals";
+import { kolSegmentSql } from "@/lib/kolSegment";
 
 function heroBudgetLabel(c: CampaignCardData): string {
   if (c.budgetType === "barter") return "Barter";
@@ -88,10 +89,12 @@ export default async function LandingPage() {
         availabilityStatus: schema.creatorProfiles.availabilityStatus,
         verificationStatus: schema.creatorProfiles.verificationStatus,
         minimumBudget: schema.creatorProfiles.minimumBudget,
+        acceptsBarter: schema.creatorProfiles.acceptsBarter,
         slotsRemaining: schema.creatorProfiles.slotsRemaining,
         monthlyCapacity: schema.creatorProfiles.monthlyCapacity,
         primaryNicheName: schema.niches.name,
         totalFollowers: sql<number>`(select coalesce(sum(csa.follower_count), 0) from creator_social_accounts csa where csa.creator_profile_id = creator_profiles.id)`,
+        kolSegment: kolSegmentSql,
         featured: schema.creatorProfiles.featured,
       })
       .from(schema.creatorProfiles)
@@ -133,7 +136,7 @@ export default async function LandingPage() {
             ✦ {Number(totalApplications).toLocaleString()}+ collabs closed
           </p>
           <h1 className="mt-5 max-w-lg font-display text-5xl font-extrabold leading-[1.05] text-oc-ink">
-            Discover Creator
+            Discover KOL
             <br />
             Collabs that fit.
           </h1>
@@ -144,7 +147,7 @@ export default async function LandingPage() {
           <form action="/marketplace" method="GET" className="mt-7 flex max-w-[420px] items-center gap-3 rounded-full bg-white p-2 pl-5 shadow-oc-sm">
             <input
               name="q"
-              placeholder="Search campaigns, creators, brands..."
+              placeholder="Search campaigns, KOLs, brands..."
               className="w-full bg-transparent text-sm text-oc-ink placeholder:text-oc-subtle outline-none"
             />
             <button type="submit" className="shrink-0 rounded-full bg-oc-600 px-6 py-3 text-sm font-semibold text-white hover:bg-oc-700">
@@ -155,7 +158,7 @@ export default async function LandingPage() {
           <div className="mt-7 flex flex-wrap gap-3.5">
             <div className="rounded-2xl bg-tile-blush px-5 py-3.5">
               <p className="font-display text-xl font-extrabold text-oc-ink">{Number(totalCreators)}+</p>
-              <p className="text-xs text-oc-ink-muted">Creators</p>
+              <p className="text-xs text-oc-ink-muted">KOLs</p>
             </div>
             <div className="rounded-2xl bg-tile-lavender px-5 py-3.5">
               <p className="font-display text-xl font-extrabold text-oc-ink">{Number(totalBrands)}+</p>
@@ -242,7 +245,7 @@ export default async function LandingPage() {
       {availableCreators.length > 0 && (
         <section className="mt-14">
           <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg font-extrabold text-oc-ink">Available Creators</h2>
+            <h2 className="font-display text-lg font-extrabold text-oc-ink">Available KOLs</h2>
             <Link href="/creators" className="text-sm font-medium text-oc-700 hover:underline">
               View all →
             </Link>
@@ -278,8 +281,8 @@ export default async function LandingPage() {
         <h2 className="mt-1 text-center font-display text-2xl font-extrabold text-oc-ink">How OpenCollab Works</h2>
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[
-            { step: "1", title: "Create your profile", body: "Brands post their company info; creators publish rates, availability, and portfolio.", tile: "bg-tile-blush" },
-            { step: "2", title: "Discover & apply", body: "Creators browse and apply to campaigns; brands browse and invite creators directly.", tile: "bg-tile-mustard" },
+            { step: "1", title: "Create your profile", body: "Brands post their company info; KOLs publish rates, availability, and portfolio.", tile: "bg-tile-blush" },
+            { step: "2", title: "Discover & apply", body: "KOLs browse and apply to campaigns; brands browse and invite KOLs directly.", tile: "bg-tile-mustard" },
             { step: "3", title: "Collaborate", body: "Agree on terms directly and bring the campaign to life — OpenCollab keeps the process structured.", tile: "bg-tile-green" },
           ].map((item) => (
             <div key={item.step} className={`rounded-oc-lg p-6 text-center ${item.tile}`}>
@@ -297,7 +300,7 @@ export default async function LandingPage() {
       <section className="mt-14 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-oc-lg border border-oc-border bg-oc-card p-6 shadow-oc-sm">
           <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-tile-blush text-base">🎨</span>
-          <h3 className="mt-3 text-base font-bold text-oc-ink">For Creators</h3>
+          <h3 className="mt-3 text-base font-bold text-oc-ink">For KOLs</h3>
           <ul className="mt-3 space-y-2 text-sm text-oc-ink-muted">
             <li>• Publish your rate card and availability once, reuse it everywhere</li>
             <li>• Apply to campaigns that match your niche and audience</li>
@@ -341,7 +344,7 @@ export default async function LandingPage() {
 
       <footer className="mt-14 border-t border-oc-border pt-8 text-xs text-oc-ink-muted">
         <div className="flex flex-wrap justify-between gap-4">
-          <p>© {new Date().getFullYear()} OpenCollab.id — Where Brands Meet Creators.</p>
+          <p>© {new Date().getFullYear()} OpenCollab.id — Where Brands Meet KOLs.</p>
           <div className="flex gap-4">
             <Link href="/how-it-works">How It Works</Link>
             <Link href="/about">About</Link>

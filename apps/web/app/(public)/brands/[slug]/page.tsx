@@ -18,7 +18,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   if (!brand) return { title: "Brand not found" };
 
   const title = brand.brandName;
-  const description = brand.description || `${brand.brandName} is a brand on OpenCollab.id, Indonesia's professional network for creator collaborations.`;
+  const description = brand.description || `${brand.brandName} is a brand on OpenCollab.id, Indonesia's professional network for KOL collaborations.`;
 
   return {
     title,
@@ -136,7 +136,7 @@ export default async function BrandProfilePage({ params }: { params: { slug: str
         </div>
         <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center shadow-oc-sm">
           <p className="text-lg font-semibold text-oc-ink">{Number(creatorsHired ?? 0)}</p>
-          <p className="text-xs text-oc-ink-muted">Creators Hired</p>
+          <p className="text-xs text-oc-ink-muted">KOLs Hired</p>
         </div>
         <div className="rounded-oc border border-oc-border bg-oc-card p-3 text-center shadow-oc-sm">
           <p className="text-lg font-semibold text-oc-ink">{reviewRate !== null ? `${reviewRate}%` : "—"}</p>

@@ -189,7 +189,7 @@ export default function NewCampaignPage() {
         {step === 3 && (
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-oc-ink">Total creators needed</label>
+              <label className="text-sm font-medium text-oc-ink">Total KOLs needed</label>
               <input type="number" value={form.creatorCountNeeded} onChange={(e) => update("creatorCountNeeded", e.target.value)} className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm" />
             </div>
             <div>
@@ -248,7 +248,7 @@ export default function NewCampaignPage() {
               <span className="font-medium text-oc-ink">Summary:</span> {form.shortDescription || "—"}
             </p>
             <p>
-              <span className="font-medium text-oc-ink">Creators needed:</span> {form.creatorCountNeeded}
+              <span className="font-medium text-oc-ink">KOLs needed:</span> {form.creatorCountNeeded}
             </p>
             <p>
               <span className="font-medium text-oc-ink">Budget:</span> {form.budgetType}

@@ -55,7 +55,7 @@ function TaxonomySection({
               <span>
                 {" — "}
                 {[
-                  item.creatorCount !== undefined ? `${item.creatorCount} creators` : null,
+                  item.creatorCount !== undefined ? `${item.creatorCount} KOLs` : null,
                   item.campaignCount !== undefined ? `${item.campaignCount} campaigns` : null,
                 ]
                   .filter(Boolean)
@@ -95,12 +95,12 @@ export default function AdminCategoriesPage() {
   return (
     <div>
       <h1 className="text-xl font-semibold text-oc-ink">Categories & Taxonomy</h1>
-      <p className="mt-1 text-sm text-oc-ink-muted">Manage campaign categories, creator niches, platforms, and collaboration types.</p>
+      <p className="mt-1 text-sm text-oc-ink-muted">Manage campaign categories, KOL niches, platforms, and collaboration types.</p>
 
       {data && (
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <TaxonomySection title="Campaign Categories" type="category" items={data.categories} onAdded={load} />
-          <TaxonomySection title="Creator Niches" type="niche" items={data.niches} onAdded={load} />
+          <TaxonomySection title="KOL Niches" type="niche" items={data.niches} onAdded={load} />
           <TaxonomySection title="Platforms" type="platform" items={data.platforms} onAdded={load} />
           <TaxonomySection title="Collaboration Types" type="collaborationType" items={data.collaborationTypes} onAdded={load} />
         </div>

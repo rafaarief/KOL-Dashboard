@@ -75,7 +75,7 @@ export default function AdminApplicationsPage() {
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search creator, campaign, or brand"
+          placeholder="Search KOL, campaign, or brand"
           className="w-72 rounded-oc-input border border-oc-border bg-oc-bg px-3 py-1.5 text-sm"
         />
         <select value={status} onChange={(e) => setStatus(e.target.value)} className="rounded-oc-input border border-oc-border bg-oc-bg px-3 py-1.5 text-sm">
@@ -92,7 +92,7 @@ export default function AdminApplicationsPage() {
         <table className="w-full min-w-[1000px] text-left text-sm">
           <thead>
             <tr className="border-b border-oc-border bg-oc-bg text-xs uppercase tracking-wide text-oc-ink-muted">
-              <th className="px-4 py-3">Creator</th>
+              <th className="px-4 py-3">KOL</th>
               <th className="px-4 py-3">Campaign</th>
               <th className="px-4 py-3">Brand</th>
               <th className="px-4 py-3">Proposed Rate</th>
@@ -148,7 +148,7 @@ export default function AdminApplicationsPage() {
                         value={noteDraft}
                         onChange={(e) => setNoteDraft(e.target.value)}
                         rows={2}
-                        placeholder="Internal note — never shown to the creator or brand"
+                        placeholder="Internal note — never shown to the KOL or brand"
                         className="w-full rounded-oc-input border border-oc-border bg-oc-bg px-2 py-1.5 text-xs text-oc-ink"
                       />
                       <div className="mt-1 flex gap-1.5">

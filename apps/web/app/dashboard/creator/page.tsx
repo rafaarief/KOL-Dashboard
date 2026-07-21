@@ -26,7 +26,7 @@ export default async function CreatorOverviewPage() {
   if (!profile) {
     return (
       <OcCard className="p-6">
-        <p className="text-sm text-oc-ink-muted">We couldn&apos;t find your creator profile. Please contact support.</p>
+        <p className="text-sm text-oc-ink-muted">We couldn&apos;t find your KOL profile. Please contact support.</p>
       </OcCard>
     );
   }
@@ -94,7 +94,7 @@ export default async function CreatorOverviewPage() {
       <p className="mt-1 text-sm text-oc-ink-muted">
         {todaysApplications > 0
           ? `${todaysApplications} application${todaysApplications === 1 ? "" : "s"} submitted in the last 24 hours.`
-          : "Here's how your creator profile is doing."}
+          : "Here's how your KOL profile is doing."}
       </p>
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">

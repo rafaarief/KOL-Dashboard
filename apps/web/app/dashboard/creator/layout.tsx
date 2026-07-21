@@ -7,7 +7,7 @@ import { getDb, schema } from "@/lib/db";
 import { DashboardSidebar } from "@/components/oc/DashboardSidebar";
 import { ShareProfileButton } from "@/components/oc/ShareProfileButton";
 
-export const metadata: Metadata = { title: "Creator Workspace", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "KOL Workspace", robots: { index: false, follow: false } };
 
 const TABS = [
   { href: "/dashboard/creator", label: "Overview", exact: true },

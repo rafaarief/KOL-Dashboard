@@ -89,8 +89,8 @@ export default async function BrandOverviewPage() {
           { label: "Total Applicants", value: Number(totalApplicants) },
           { label: "Pending Review", value: Number(pendingReview) },
           { label: "Shortlisted", value: Number(shortlisted) },
-          { label: "Accepted Creators", value: Number(accepted) },
-          { label: "Saved Creators", value: Number(savedCreatorsCount) },
+          { label: "Accepted KOLs", value: Number(accepted) },
+          { label: "Saved KOLs", value: Number(savedCreatorsCount) },
         ].map((s, i) => (
           <StatTile key={s.label} label={s.label} value={s.value} index={i} />
         ))}
@@ -99,7 +99,7 @@ export default async function BrandOverviewPage() {
       <div className="mt-6">
         <OcCard className="p-5">
           <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-oc-ink">Recently active creators</p>
+            <p className="text-sm font-medium text-oc-ink">Recently active KOLs</p>
             <Link href="/dashboard/brand/applicants" className="text-xs text-oc-700 hover:underline">
               Review all →
             </Link>
@@ -131,7 +131,7 @@ export default async function BrandOverviewPage() {
           Post Campaign
         </Link>
         <Link href="/creators" className="rounded-full border border-oc-border bg-oc-card px-5 py-2.5 text-sm font-semibold hover:bg-oc-bg">
-          Browse Creators
+          Browse KOLs
         </Link>
         <Link href="/dashboard/brand/applicants" className="rounded-full border border-oc-border bg-oc-card px-5 py-2.5 text-sm font-semibold hover:bg-oc-bg">
           Review Applicants

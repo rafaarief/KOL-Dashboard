@@ -10,7 +10,7 @@ const NAV_GROUPS = [
     label: "OpenCollab",
     items: [
       { href: "/admin", label: "Overview", exact: true },
-      { href: "/admin/creators", label: "Creators" },
+      { href: "/admin/creators", label: "KOLs" },
       { href: "/admin/brands", label: "Brands" },
       { href: "/admin/campaigns", label: "Campaigns" },
       { href: "/admin/applications", label: "Applications" },

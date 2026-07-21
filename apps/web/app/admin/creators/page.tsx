@@ -7,12 +7,12 @@ import { Avatar, AvailabilityBadge, OcCard, Pagination, VerificationBadge } from
 import { useToast } from "@/components/oc/Toast";
 
 const ACTION_LABELS: Record<string, string> = {
-  verify: "Creator verified.",
+  verify: "KOL verified.",
   reject_verification: "Verification rejected.",
-  suspend: "Creator suspended.",
-  reactivate: "Creator reactivated.",
-  feature: "Creator featured.",
-  unfeature: "Creator unfeatured.",
+  suspend: "KOL suspended.",
+  reactivate: "KOL reactivated.",
+  feature: "KOL featured.",
+  unfeature: "KOL unfeatured.",
 };
 
 interface AdminCreatorRow {
@@ -53,8 +53,8 @@ export default function AdminCreatorsPage() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-oc-ink">Creators</h1>
-          <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} creator accounts.</p>
+          <h1 className="text-xl font-semibold text-oc-ink">KOLs</h1>
+          <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} KOL accounts.</p>
         </div>
         <a href="/api/admin/creators?format=csv" className="rounded-oc-input border border-oc-border px-3.5 py-1.5 text-sm hover:bg-oc-bg">
           Export CSV
@@ -86,7 +86,7 @@ export default function AdminCreatorsPage() {
         <table className="w-full min-w-[900px] text-left text-sm">
           <thead>
             <tr className="border-b border-oc-border bg-oc-bg text-xs uppercase tracking-wide text-oc-ink-muted">
-              <th className="px-4 py-3">Creator</th>
+              <th className="px-4 py-3">KOL</th>
               <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">City</th>
               <th className="px-4 py-3">Availability</th>
@@ -143,7 +143,7 @@ export default function AdminCreatorsPage() {
             {rows.length === 0 && !isLoading && (
               <tr>
                 <td colSpan={7} className="px-4 py-6 text-center text-oc-ink-muted">
-                  No creators found.
+                  No KOLs found.
                 </td>
               </tr>
             )}

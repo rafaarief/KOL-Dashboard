@@ -263,7 +263,7 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
 
         {campaign.requirements && (
           <section className="mt-6">
-            <h2 className="text-sm font-semibold text-oc-ink">Creator Requirements</h2>
+            <h2 className="text-sm font-semibold text-oc-ink">KOL Requirements</h2>
             <p className="mt-2 text-sm text-oc-ink-muted">{campaign.requirements}</p>
             {campaign.minimumFollowers && (
               <p className="mt-1 text-sm text-oc-ink-muted">Minimum followers: {campaign.minimumFollowers.toLocaleString()}</p>
@@ -315,7 +315,7 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
           <p className="text-xs text-oc-dark-muted">Total Budget</p>
           <p className="font-display text-3xl font-extrabold">{budgetLabel(campaign)}</p>
           <p className="mt-1 text-xs text-oc-dark-muted">
-            {slotsRemaining} of {campaign.creatorCountNeeded} creator slots remaining
+            {slotsRemaining} of {campaign.creatorCountNeeded} KOL slots remaining
           </p>
 
           <div className="mt-5">
@@ -325,7 +325,7 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
               </p>
             ) : slotsRemaining <= 0 ? (
               <p className="rounded-full border border-white/20 p-3 text-center text-xs text-oc-dark-muted">
-                This campaign has filled all of its creator slots.
+                This campaign has filled all of its KOL slots.
               </p>
             ) : !session ? (
               <Link href={`/login?next=/campaigns/${campaign.slug}`} className="block w-full rounded-full bg-oc-600 px-4 py-3 text-center text-sm font-bold text-white hover:bg-oc-700">
@@ -335,7 +335,7 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
               <ApplyForm campaignId={campaign.id} socialAccounts={socialAccounts} />
             ) : (
               <p className="rounded-full border border-white/20 p-3 text-center text-xs text-oc-dark-muted">
-                Only creator accounts can apply to campaigns.
+                Only KOL accounts can apply to campaigns.
               </p>
             )}
           </div>
@@ -362,7 +362,7 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
             </div>
             <div>
               <p className="text-base font-semibold text-oc-ink">{brandTrust?.creatorsHired ?? 0}</p>
-              <p className="text-oc-ink-muted">Creators Hired</p>
+              <p className="text-oc-ink-muted">KOLs Hired</p>
             </div>
             <div>
               <p className="text-base font-semibold text-oc-ink">{brandReviewRate !== null ? `${brandReviewRate}%` : "—"}</p>

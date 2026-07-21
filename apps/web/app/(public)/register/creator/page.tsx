@@ -45,7 +45,7 @@ export default function RegisterCreatorPage() {
     <div className="mx-auto max-w-md">
       <div className="rounded-oc-lg border border-oc-border bg-oc-card p-8 shadow-oc">
         <span className="flex h-11 w-11 items-center justify-center rounded-full bg-tile-blush text-lg">🎨</span>
-        <h1 className="mt-4 font-display text-xl font-extrabold text-oc-ink">Create your creator profile</h1>
+        <h1 className="mt-4 font-display text-xl font-extrabold text-oc-ink">Create your KOL profile</h1>
         <p className="mt-1 text-sm text-oc-ink-muted">Free to join — publish your rate card and start applying to campaigns.</p>
 
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -94,7 +94,7 @@ export default function RegisterCreatorPage() {
           {error && <p className="text-sm text-red-600">{error}</p>}
 
           <OcButton type="submit" disabled={isSubmitting} className="w-full">
-            {isSubmitting ? "Creating account..." : "Create Creator Account"}
+            {isSubmitting ? "Creating account..." : "Create KOL Account"}
           </OcButton>
         </form>
       </div>

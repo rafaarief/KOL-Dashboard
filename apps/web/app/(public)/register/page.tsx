@@ -12,7 +12,7 @@ export default function RegisterChoicePage() {
           className="rounded-oc-lg border border-oc-border bg-tile-blush p-8 text-left shadow-oc-sm transition hover:-translate-y-1 hover:shadow-oc"
         >
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-lg">🎨</span>
-          <p className="mt-4 font-display text-lg font-bold text-oc-ink">I&apos;m a Creator</p>
+          <p className="mt-4 font-display text-lg font-bold text-oc-ink">I&apos;m a KOL</p>
           <p className="mt-1 text-sm text-oc-ink-muted">
             Publish your rate card and availability, browse campaigns, and apply to collaborations.
           </p>
@@ -24,7 +24,7 @@ export default function RegisterChoicePage() {
           <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-lg">🏢</span>
           <p className="mt-4 font-display text-lg font-bold text-oc-ink">I&apos;m a Brand</p>
           <p className="mt-1 text-sm text-oc-ink-muted">
-            Post campaigns, browse creators, and manage applicants in one dashboard.
+            Post campaigns, browse KOLs, and manage applicants in one dashboard.
           </p>
         </Link>
       </div>

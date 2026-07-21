@@ -1,5 +1,6 @@
-import { and, asc, desc, eq, gte, ilike, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, lte, ne, or, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
+import { KOL_SEGMENT_THRESHOLDS, igFollowersSql, kolSegmentDriverSql, kolSegmentSql, tiktokFollowersSql, type KolSegment } from "@/lib/kolSegment";
 
 const PAGE_SIZE = 12;
 
@@ -9,9 +10,15 @@ export interface CampaignListParams {
   city?: string;
   minBudget?: string;
   maxBudget?: string;
+  budgetType?: string; // "money" | "barter"
   sort?: string;
   page?: string;
 }
+
+// The number brands actually care about comparing against — whichever of these the campaign
+// has set, in priority order. Barter campaigns typically leave all three null, so budget-range
+// filters naturally exclude them unless a caller explicitly asks for budgetType=barter.
+const effectiveBudgetSql = sql<number>`coalesce(${schema.campaigns.budgetPerCreator}, ${schema.campaigns.budgetMax}, ${schema.campaigns.budgetMin})`;
 
 export async function listPublishedCampaigns(params: CampaignListParams) {
   const db = getDb();
@@ -20,17 +27,24 @@ export async function listPublishedCampaigns(params: CampaignListParams) {
   const conditions = [eq(schema.campaigns.status, "published")];
   if (params.q) {
     conditions.push(
-      or(ilike(schema.campaigns.title, `%${params.q}%`), ilike(schema.campaigns.shortDescription, `%${params.q}%`))!
+      or(
+        ilike(schema.campaigns.title, `%${params.q}%`),
+        ilike(schema.campaigns.shortDescription, `%${params.q}%`),
+        ilike(schema.campaigns.city, `%${params.q}%`),
+        ilike(schema.marketplaceCategories.name, `%${params.q}%`)
+      )!
     );
   }
   if (params.category) conditions.push(eq(schema.marketplaceCategories.slug, params.category));
   if (params.city) conditions.push(eq(schema.campaigns.city, params.city));
-  if (params.minBudget) conditions.push(gte(schema.campaigns.budgetPerCreator, params.minBudget));
-  if (params.maxBudget) conditions.push(lte(schema.campaigns.budgetPerCreator, params.maxBudget));
+  if (params.budgetType === "barter") conditions.push(eq(schema.campaigns.budgetType, "barter"));
+  if (params.budgetType === "money") conditions.push(ne(schema.campaigns.budgetType, "barter"));
+  if (params.minBudget) conditions.push(gte(effectiveBudgetSql, params.minBudget));
+  if (params.maxBudget) conditions.push(lte(effectiveBudgetSql, params.maxBudget));
 
   const sortColumns =
     params.sort === "highest_budget"
-      ? [desc(schema.campaigns.budgetPerCreator)]
+      ? [desc(effectiveBudgetSql)]
       : params.sort === "closing_soon"
         ? [asc(schema.campaigns.applicationDeadline)]
         : [desc(schema.campaigns.featured), desc(schema.campaigns.publishedAt)];
@@ -86,8 +100,23 @@ export interface CreatorListParams {
   city?: string;
   minFollowers?: string;
   availability?: string;
+  segment?: string; // "nano" | "mikro" | "makro" | "mega"
+  feeType?: string; // "paid" | "barter"
+  minFee?: string;
+  maxFee?: string;
   sort?: string;
   page?: string;
+}
+
+function segmentRangeCondition(segment: string) {
+  if (!(segment in KOL_SEGMENT_THRESHOLDS)) return undefined;
+  const order: KolSegment[] = ["nano", "mikro", "makro", "mega"];
+  const index = order.indexOf(segment as KolSegment);
+  const floor = KOL_SEGMENT_THRESHOLDS[order[index]];
+  const nextFloor = index < order.length - 1 ? KOL_SEGMENT_THRESHOLDS[order[index + 1]] : undefined;
+  return nextFloor
+    ? and(gte(kolSegmentDriverSql, floor), sql`${kolSegmentDriverSql} < ${nextFloor}`)
+    : gte(kolSegmentDriverSql, floor);
 }
 
 export async function listActiveCreators(params: CreatorListParams) {
@@ -96,13 +125,30 @@ export async function listActiveCreators(params: CreatorListParams) {
 
   const conditions = [eq(schema.creatorProfiles.status, "active")];
   if (params.q) {
+    // Searches everything a brand would plausibly type: name/handle, city, bio/headline, and niche —
+    // a city-only query like "jakarta" previously matched nothing because only name/username were searched.
     conditions.push(
-      or(ilike(schema.creatorProfiles.displayName, `%${params.q}%`), ilike(schema.creatorProfiles.username, `%${params.q}%`))!
+      or(
+        ilike(schema.creatorProfiles.displayName, `%${params.q}%`),
+        ilike(schema.creatorProfiles.username, `%${params.q}%`),
+        ilike(schema.creatorProfiles.city, `%${params.q}%`),
+        ilike(schema.creatorProfiles.headline, `%${params.q}%`),
+        ilike(schema.creatorProfiles.bio, `%${params.q}%`),
+        ilike(schema.niches.name, `%${params.q}%`)
+      )!
     );
   }
   if (params.niche) conditions.push(eq(schema.niches.slug, params.niche));
   if (params.city) conditions.push(eq(schema.creatorProfiles.city, params.city));
   if (params.availability) conditions.push(eq(schema.creatorProfiles.availabilityStatus, params.availability));
+  if (params.feeType === "barter") conditions.push(eq(schema.creatorProfiles.acceptsBarter, true));
+  if (params.feeType === "paid") conditions.push(sql`${schema.creatorProfiles.minimumBudget} is not null`);
+  if (params.minFee) conditions.push(gte(schema.creatorProfiles.minimumBudget, params.minFee));
+  if (params.maxFee) conditions.push(lte(schema.creatorProfiles.minimumBudget, params.maxFee));
+  if (params.segment) {
+    const segmentCondition = segmentRangeCondition(params.segment);
+    if (segmentCondition) conditions.push(segmentCondition);
+  }
 
   const sortColumns =
     params.sort === "lowest_rate"
@@ -121,10 +167,14 @@ export async function listActiveCreators(params: CreatorListParams) {
       availabilityStatus: schema.creatorProfiles.availabilityStatus,
       verificationStatus: schema.creatorProfiles.verificationStatus,
       minimumBudget: schema.creatorProfiles.minimumBudget,
+      acceptsBarter: schema.creatorProfiles.acceptsBarter,
       slotsRemaining: schema.creatorProfiles.slotsRemaining,
       monthlyCapacity: schema.creatorProfiles.monthlyCapacity,
       primaryNicheName: schema.niches.name,
       totalFollowers: followersSubquery,
+      igFollowers: igFollowersSql,
+      tiktokFollowers: tiktokFollowersSql,
+      kolSegment: kolSegmentSql,
       featured: schema.creatorProfiles.featured,
       lastLoginAt: schema.users.lastLoginAt,
     })

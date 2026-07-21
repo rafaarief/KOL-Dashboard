@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Browse Campaigns",
-  description: "Discover creator collaboration campaigns from brands across Indonesia.",
+  description: "Discover KOL collaboration campaigns from brands across Indonesia.",
 };
 
 export default async function CampaignsPage({
@@ -24,6 +24,8 @@ export default async function CampaignsPage({
     category: typeof searchParams.category === "string" ? searchParams.category : undefined,
     city: typeof searchParams.city === "string" ? searchParams.city : undefined,
     minBudget: typeof searchParams.minBudget === "string" ? searchParams.minBudget : undefined,
+    maxBudget: typeof searchParams.maxBudget === "string" ? searchParams.maxBudget : undefined,
+    budgetType: typeof searchParams.budgetType === "string" ? searchParams.budgetType : undefined,
     sort: typeof searchParams.sort === "string" ? searchParams.sort : undefined,
     page: typeof searchParams.page === "string" ? searchParams.page : undefined,
   };
@@ -52,10 +54,21 @@ export default async function CampaignsPage({
           placeholder="City"
           className="w-40 rounded-full border border-oc-border bg-oc-card px-4 py-2 text-sm outline-none focus:border-oc-600"
         />
+        <select name="budgetType" defaultValue={params.budgetType ?? ""} className="rounded-full border border-oc-border bg-oc-card px-4 py-2 text-sm">
+          <option value="">Money or Barter</option>
+          <option value="money">Money (paid)</option>
+          <option value="barter">Barter Value</option>
+        </select>
         <input
           name="minBudget"
           defaultValue={params.minBudget}
           placeholder="Min budget (Rp)"
+          className="w-40 rounded-full border border-oc-border bg-oc-card px-4 py-2 text-sm outline-none focus:border-oc-600"
+        />
+        <input
+          name="maxBudget"
+          defaultValue={params.maxBudget}
+          placeholder="Max budget (Rp)"
           className="w-40 rounded-full border border-oc-border bg-oc-card px-4 py-2 text-sm outline-none focus:border-oc-600"
         />
         <select name="sort" defaultValue={params.sort ?? "newest"} className="rounded-full border border-oc-border bg-oc-card px-4 py-2 text-sm">

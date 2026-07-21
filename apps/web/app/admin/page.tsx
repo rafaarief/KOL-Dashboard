@@ -82,8 +82,8 @@ export default function AdminOverviewPage() {
       {data && (
         <>
           <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatTile label="Total Creators" value={data.totals.totalCreators} />
-            <StatTile label="Active Creators" value={data.totals.activeCreators} />
+            <StatTile label="Total KOLs" value={data.totals.totalCreators} />
+            <StatTile label="Active KOLs" value={data.totals.activeCreators} />
             <StatTile label="Total Brands" value={data.totals.totalBrands} />
             <StatTile label="Verified Brands" value={data.totals.verifiedBrands} />
             <StatTile label="Active Campaigns" value={data.totals.activeCampaigns} />
@@ -96,8 +96,8 @@ export default function AdminOverviewPage() {
 
           <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
             <Breakdown title="Campaigns by category" rows={data.campaignsByCategory} />
-            <Breakdown title="Creators by niche" rows={data.creatorsByNiche} />
-            <Breakdown title="Creators by city" rows={data.creatorsByCity} />
+            <Breakdown title="KOLs by niche" rows={data.creatorsByNiche} />
+            <Breakdown title="KOLs by city" rows={data.creatorsByCity} />
           </div>
         </>
       )}

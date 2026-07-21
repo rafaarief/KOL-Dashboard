@@ -50,7 +50,7 @@ export function SaveToShortlistButton({ creatorId, searchResultId }: { creatorId
         onClick={() => setIsOpen((open) => !open)}
         className="rounded-md border border-slate-300 px-3 py-1.5 text-xs text-slate-800 hover:border-indigo-500"
       >
-        {savedMessage ?? "Save Creator"}
+        {savedMessage ?? "Save KOL"}
       </button>
 
       {isOpen && (

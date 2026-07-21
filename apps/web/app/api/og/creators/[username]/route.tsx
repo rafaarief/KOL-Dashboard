@@ -26,7 +26,7 @@ export async function GET(_request: Request, { params }: { params: { username: s
 
   const displayName = creator?.displayName ?? params.username;
   const headline =
-    creator?.headline || [creator?.primaryNicheName ? `${creator.primaryNicheName} Creator` : "Creator", creator?.city].filter(Boolean).join(" • ");
+    creator?.headline || [creator?.primaryNicheName ? `${creator.primaryNicheName} KOL` : "KOL", creator?.city].filter(Boolean).join(" • ");
   const initials = displayName
     .split(" ")
     .map((p) => p[0])

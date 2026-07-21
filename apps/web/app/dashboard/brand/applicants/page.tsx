@@ -33,7 +33,7 @@ export default function BrandApplicantsPage() {
         <table className="w-full min-w-[800px] text-left text-sm">
           <thead>
             <tr className="border-b border-oc-border bg-oc-bg text-xs uppercase tracking-wide text-oc-ink-muted">
-              <th className="px-4 py-3">Creator</th>
+              <th className="px-4 py-3">KOL</th>
               <th className="px-4 py-3">Campaign</th>
               <th className="px-4 py-3">Proposed Rate</th>
               <th className="px-4 py-3">Status</th>
@@ -67,10 +67,10 @@ export default function BrandApplicantsPage() {
                 <td colSpan={6} className="px-4 py-8 text-center text-oc-ink-muted">
                   <p className="font-medium text-oc-ink">No applicants yet.</p>
                   <p className="mx-auto mt-1 max-w-sm text-xs">
-                    Once your campaigns are published, creators who match your requirements can apply here. You can also browse and directly invite creators instead of waiting.
+                    Once your campaigns are published, KOLs who match your requirements can apply here. You can also browse and directly invite KOLs instead of waiting.
                   </p>
                   <a href="/creators" className="mt-3 inline-block rounded-oc-input border border-oc-600 px-4 py-2 text-xs font-medium text-oc-600 hover:bg-oc-300/10">
-                    Browse Creators
+                    Browse KOLs
                   </a>
                 </td>
               </tr>

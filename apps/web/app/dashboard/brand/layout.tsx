@@ -8,7 +8,7 @@ const TABS = [
   { href: "/dashboard/brand/profile", label: "Brand Profile" },
   { href: "/dashboard/brand/campaigns", label: "Campaigns" },
   { href: "/dashboard/brand/applicants", label: "Collaboration Applicants" },
-  { href: "/dashboard/brand/saved-creators", label: "Saved Creators" },
+  { href: "/dashboard/brand/saved-creators", label: "Saved KOLs" },
   { href: "/dashboard/brand/settings", label: "Settings" },
 ];
 

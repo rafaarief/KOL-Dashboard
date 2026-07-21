@@ -12,15 +12,15 @@ const baloo2 = Baloo_2({ subsets: ["latin"], weight: ["500", "600", "700", "800"
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
   title: {
-    default: "OpenCollab.id — Where Brands Meet Creators",
+    default: "OpenCollab.id — Where Brands Meet KOLs",
     template: "%s — OpenCollab.id",
   },
   description:
-    "Discover creator campaigns, publish collaboration opportunities, and connect with brands and creators across Indonesia.",
+    "Discover KOL campaigns, publish collaboration opportunities, and connect with brands and KOLs across Indonesia.",
   openGraph: {
-    title: "OpenCollab.id — Where Brands Meet Creators",
+    title: "OpenCollab.id — Where Brands Meet KOLs",
     description:
-      "Discover creator campaigns, publish collaboration opportunities, and connect with brands and creators across Indonesia.",
+      "Discover KOL campaigns, publish collaboration opportunities, and connect with brands and KOLs across Indonesia.",
     siteName: "OpenCollab.id",
     locale: "id_ID",
     type: "website",

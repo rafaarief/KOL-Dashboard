@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { Avatar, AvailabilityBadge, CategoryChip, VerificationBadge, formatCompactNumber, formatIDR, tileAt } from "./primitives";
+import { KOL_SEGMENT_LABELS, type KolSegment } from "@/lib/kolSegment";
 
 const RECENTLY_ACTIVE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -13,7 +14,9 @@ export interface CreatorCardData {
   availabilityStatus: string;
   verificationStatus: string;
   minimumBudget: string | null;
+  acceptsBarter?: boolean;
   totalFollowers: number;
+  kolSegment?: KolSegment;
   slotsRemaining: number | null;
   monthlyCapacity: number | null;
   featured?: boolean;
@@ -51,10 +54,20 @@ export function CreatorCard({ creator, index = 0 }: { creator: CreatorCardData; 
       </p>
 
       <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+        {creator.kolSegment && (
+          <span className="inline-flex items-center rounded-full bg-oc-dark px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
+            {KOL_SEGMENT_LABELS[creator.kolSegment]}
+          </span>
+        )}
         {creator.primaryNicheName && <CategoryChip>{creator.primaryNicheName}</CategoryChip>}
         {isRecentlyActive && (
           <span className="inline-flex items-center gap-1 rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-oc-ink">
             <span className="h-1.5 w-1.5 rounded-full bg-oc-600" /> Active
+          </span>
+        )}
+        {creator.acceptsBarter && (
+          <span className="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-oc-ink">
+            Open for Barter
           </span>
         )}
       </div>
@@ -65,7 +78,9 @@ export function CreatorCard({ creator, index = 0 }: { creator: CreatorCardData; 
           <p className="text-oc-ink-muted">Followers</p>
         </div>
         <div className="rounded-2xl bg-white px-2 py-2">
-          <p className="font-display font-bold text-oc-ink">{creator.minimumBudget ? formatIDR(creator.minimumBudget) : "Contact"}</p>
+          <p className="font-display font-bold text-oc-ink">
+            {creator.minimumBudget ? formatIDR(creator.minimumBudget) : creator.acceptsBarter ? "Barter" : "Contact"}
+          </p>
           <p className="text-oc-ink-muted">Starting rate</p>
         </div>
       </div>

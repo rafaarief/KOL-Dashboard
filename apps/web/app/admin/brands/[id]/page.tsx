@@ -223,7 +223,7 @@ export default function AdminBrandDetailPage() {
                 <dd>{data.stats.totalApplicants}</dd>
               </div>
               <div className="flex justify-between">
-                <dt className="text-oc-ink-muted">Creators hired</dt>
+                <dt className="text-oc-ink-muted">KOLs hired</dt>
                 <dd>{data.stats.creatorsHired}</dd>
               </div>
               <div className="flex justify-between">

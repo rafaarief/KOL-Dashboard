@@ -42,12 +42,12 @@ interface CreatorDetail {
 }
 
 const ACTION_LABELS: Record<string, string> = {
-  verify: "Creator verified.",
+  verify: "KOL verified.",
   reject_verification: "Verification rejected.",
-  suspend: "Creator suspended.",
-  reactivate: "Creator reactivated.",
-  feature: "Creator featured.",
-  unfeature: "Creator unfeatured.",
+  suspend: "KOL suspended.",
+  reactivate: "KOL reactivated.",
+  feature: "KOL featured.",
+  unfeature: "KOL unfeatured.",
 };
 
 export default function AdminCreatorDetailPage() {
@@ -69,7 +69,7 @@ export default function AdminCreatorDetailPage() {
           bio: body.profile.bio ?? "",
         });
       })
-      .catch(() => showToast("Couldn't load this creator.", "error"));
+      .catch(() => showToast("Couldn't load this KOL.", "error"));
   }
 
   useEffect(load, [params.id]);

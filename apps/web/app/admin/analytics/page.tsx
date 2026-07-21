@@ -57,7 +57,7 @@ export default function AdminAnalyticsPage() {
 
       {data && (
         <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <SeriesChart title="Creator registrations" points={data.creatorRegistrations} />
+          <SeriesChart title="KOL registrations" points={data.creatorRegistrations} />
           <SeriesChart title="Brand registrations" points={data.brandRegistrations} />
           <SeriesChart title="Campaigns created" points={data.campaignsCreated} />
           <SeriesChart title="Applications submitted" points={data.applicationsOverTime} />
