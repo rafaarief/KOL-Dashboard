@@ -194,7 +194,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
 
       {/* Hero */}
       <div className={`relative mb-8 overflow-hidden rounded-oc-xl p-8 sm:p-11 ${tileForSeed(creator.username)}`}>
-        <div className="absolute right-6 top-6 z-10">
+        <div className="mb-4 flex justify-end sm:absolute sm:right-6 sm:top-6 sm:z-10 sm:mb-0">
           <ShareProfileButton username={creator.username} />
         </div>
         <div className="grid gap-10 sm:grid-cols-[1.1fr_1fr] sm:items-center">
