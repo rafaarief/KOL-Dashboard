@@ -3,16 +3,16 @@ import { and, desc, eq, gt, notInArray, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getDb, schema } from "@/lib/db";
-import { OcBadge, OcCard, VerificationBadge } from "@/components/oc/primitives";
+import { OcCard, VerificationBadge, tileAt } from "@/components/oc/primitives";
 
 export const dynamic = "force-dynamic";
 
-function StatTile({ label, value }: { label: string; value: number | string }) {
+function StatTile({ label, value, index }: { label: string; value: number | string; index: number }) {
   return (
-    <OcCard className="px-5 py-4">
-      <p className="text-xs uppercase tracking-wide text-oc-ink-muted">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-oc-ink">{value}</p>
-    </OcCard>
+    <div className={`rounded-oc-lg px-5 py-4 ${tileAt(index)}`}>
+      <p className="font-display text-2xl font-extrabold text-oc-ink">{value}</p>
+      <p className="mt-1 text-xs font-medium text-oc-ink-muted">{label}</p>
+    </div>
   );
 }
 
@@ -90,7 +90,7 @@ export default async function CreatorOverviewPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-oc-ink">Welcome back, {profile.displayName}</h1>
+      <h1 className="font-display text-2xl font-extrabold text-oc-ink">Welcome back, {profile.displayName}</h1>
       <p className="mt-1 text-sm text-oc-ink-muted">
         {todaysApplications > 0
           ? `${todaysApplications} application${todaysApplications === 1 ? "" : "s"} submitted in the last 24 hours.`
@@ -98,14 +98,18 @@ export default async function CreatorOverviewPage() {
       </p>
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatTile label="Profile Completion" value={`${completionPercent}%`} />
-        <StatTile label="Availability" value={profile.availabilityStatus.replace("_", " ")} />
-        <StatTile label="Applications Submitted" value={applications.length} />
-        <StatTile label="Acceptance Rate" value={acceptanceRate !== null ? `${acceptanceRate}%` : "—"} />
-        <StatTile label="Shortlisted" value={shortlisted} />
-        <StatTile label="Accepted Campaigns" value={accepted} />
-        <StatTile label="Saved Campaigns" value={Number(savedCount)} />
-        <StatTile label="Monthly Slots" value={profile.slotsRemaining ?? "—"} />
+        {[
+          { label: "Profile Completion", value: `${completionPercent}%` },
+          { label: "Availability", value: profile.availabilityStatus.replace("_", " ") },
+          { label: "Applications Submitted", value: applications.length },
+          { label: "Acceptance Rate", value: acceptanceRate !== null ? `${acceptanceRate}%` : "—" },
+          { label: "Shortlisted", value: shortlisted },
+          { label: "Accepted Campaigns", value: accepted },
+          { label: "Saved Campaigns", value: Number(savedCount) },
+          { label: "Monthly Slots", value: profile.slotsRemaining ?? "—" },
+        ].map((s, i) => (
+          <StatTile key={s.label} label={s.label} value={s.value} index={i} />
+        ))}
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -165,21 +169,21 @@ export default async function CreatorOverviewPage() {
 
       <div className="mt-8 flex flex-wrap gap-3">
         {completionPercent < 100 ? (
-          <Link href="/dashboard/creator/profile" className="rounded-oc-input bg-oc-600 px-4 py-2 text-sm font-medium text-white hover:bg-oc-700">
+          <Link href="/dashboard/creator/profile" className="rounded-full bg-oc-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-oc-700">
             Complete your profile
           </Link>
         ) : (
-          <Link href="/campaigns" className="rounded-oc-input bg-oc-600 px-4 py-2 text-sm font-medium text-white hover:bg-oc-700">
+          <Link href="/campaigns" className="rounded-full bg-oc-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-oc-700">
             Browse campaigns
           </Link>
         )}
-        <Link href="/dashboard/creator/availability" className="rounded-oc-input border border-oc-border bg-oc-card px-4 py-2 text-sm hover:bg-oc-bg">
+        <Link href="/dashboard/creator/availability" className="rounded-full border border-oc-border bg-oc-card px-5 py-2.5 text-sm font-semibold hover:bg-oc-bg">
           Update availability
         </Link>
-        <Link href="/dashboard/creator/portfolio" className="rounded-oc-input border border-oc-border bg-oc-card px-4 py-2 text-sm hover:bg-oc-bg">
+        <Link href="/dashboard/creator/portfolio" className="rounded-full border border-oc-border bg-oc-card px-5 py-2.5 text-sm font-semibold hover:bg-oc-bg">
           Add portfolio
         </Link>
-        <Link href="/dashboard/creator/rates" className="rounded-oc-input border border-oc-border bg-oc-card px-4 py-2 text-sm hover:bg-oc-bg">
+        <Link href="/dashboard/creator/rates" className="rounded-full border border-oc-border bg-oc-card px-5 py-2.5 text-sm font-semibold hover:bg-oc-bg">
           Edit rate card
         </Link>
       </div>

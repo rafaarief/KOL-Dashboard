@@ -3,16 +3,16 @@ import { eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getDb, schema } from "@/lib/db";
-import { ApplicationStatusBadge, Avatar, OcCard } from "@/components/oc/primitives";
+import { ApplicationStatusBadge, Avatar, OcCard, tileAt } from "@/components/oc/primitives";
 
 export const dynamic = "force-dynamic";
 
-function StatTile({ label, value }: { label: string; value: number | string }) {
+function StatTile({ label, value, index }: { label: string; value: number | string; index: number }) {
   return (
-    <OcCard className="px-5 py-4">
-      <p className="text-xs uppercase tracking-wide text-oc-ink-muted">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-oc-ink">{value}</p>
-    </OcCard>
+    <div className={`rounded-oc-lg px-5 py-4 ${tileAt(index)}`}>
+      <p className="font-display text-2xl font-extrabold text-oc-ink">{value}</p>
+      <p className="mt-1 text-xs font-medium text-oc-ink-muted">{label}</p>
+    </div>
   );
 }
 
@@ -77,19 +77,23 @@ export default async function BrandOverviewPage() {
 
   return (
     <div>
-      <h1 className="text-xl font-semibold text-oc-ink">Welcome back, {profile.brandName}</h1>
+      <h1 className="font-display text-2xl font-extrabold text-oc-ink">Welcome back, {profile.brandName}</h1>
       <p className="mt-1 text-sm text-oc-ink-muted">
         {today > 0 ? `${today} new application${today === 1 ? "" : "s"} in the last 24 hours.` : "Here's your campaign activity at a glance."}
       </p>
 
       <div className="mt-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <StatTile label="Active Campaigns" value={Number(activeCampaigns)} />
-        <StatTile label="Draft Campaigns" value={Number(draftCampaigns)} />
-        <StatTile label="Total Applicants" value={Number(totalApplicants)} />
-        <StatTile label="Pending Review" value={Number(pendingReview)} />
-        <StatTile label="Shortlisted" value={Number(shortlisted)} />
-        <StatTile label="Accepted Creators" value={Number(accepted)} />
-        <StatTile label="Saved Creators" value={Number(savedCreatorsCount)} />
+        {[
+          { label: "Active Campaigns", value: Number(activeCampaigns) },
+          { label: "Draft Campaigns", value: Number(draftCampaigns) },
+          { label: "Total Applicants", value: Number(totalApplicants) },
+          { label: "Pending Review", value: Number(pendingReview) },
+          { label: "Shortlisted", value: Number(shortlisted) },
+          { label: "Accepted Creators", value: Number(accepted) },
+          { label: "Saved Creators", value: Number(savedCreatorsCount) },
+        ].map((s, i) => (
+          <StatTile key={s.label} label={s.label} value={s.value} index={i} />
+        ))}
       </div>
 
       <div className="mt-6">
@@ -123,13 +127,13 @@ export default async function BrandOverviewPage() {
       </div>
 
       <div className="mt-8 flex flex-wrap gap-3">
-        <Link href="/dashboard/brand/campaigns/new" className="rounded-oc-input bg-oc-600 px-4 py-2 text-sm font-medium text-white hover:bg-oc-700">
+        <Link href="/dashboard/brand/campaigns/new" className="rounded-full bg-oc-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-oc-700">
           Post Campaign
         </Link>
-        <Link href="/creators" className="rounded-oc-input border border-oc-border bg-oc-card px-4 py-2 text-sm hover:bg-oc-bg">
+        <Link href="/creators" className="rounded-full border border-oc-border bg-oc-card px-5 py-2.5 text-sm font-semibold hover:bg-oc-bg">
           Browse Creators
         </Link>
-        <Link href="/dashboard/brand/applicants" className="rounded-oc-input border border-oc-border bg-oc-card px-4 py-2 text-sm hover:bg-oc-bg">
+        <Link href="/dashboard/brand/applicants" className="rounded-full border border-oc-border bg-oc-card px-5 py-2.5 text-sm font-semibold hover:bg-oc-bg">
           Review Applicants
         </Link>
       </div>

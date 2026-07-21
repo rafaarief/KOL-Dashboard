@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Clock, MapPin, Users, Wallet } from "lucide-react";
-import { Avatar, CampaignStatusBadge, VerificationBadge, formatIDR } from "./primitives";
+import { Clock, MapPin } from "lucide-react";
+import { Avatar, VerificationBadge, formatIDR, tileAt } from "./primitives";
 import { campaignVisualFor } from "@/lib/campaignVisuals";
 
 export interface CampaignCardData {
@@ -25,13 +25,14 @@ export interface CampaignCardData {
   featured?: boolean;
   coverImageUrl?: string | null;
   coverImageAlt?: string | null;
+  applicantCount?: number;
 }
 
 function budgetLabel(c: CampaignCardData): string {
   if (c.budgetType === "barter") return "Product Barter";
   if (c.budgetType === "affiliate") return "Affiliate Commission";
   if (c.budgetType === "negotiable") return "Negotiable";
-  if (c.budgetPerCreator) return `${formatIDR(c.budgetPerCreator)} / creator`;
+  if (c.budgetPerCreator) return formatIDR(c.budgetPerCreator);
   if (c.budgetMin && c.budgetMax) return `${formatIDR(c.budgetMin)}–${formatIDR(c.budgetMax)}`;
   return "Negotiable";
 }
@@ -48,21 +49,21 @@ function urgencyLabel(deadline: Date | string | null): string | null {
   return `${days} days left`;
 }
 
-export function CampaignCard({ campaign }: { campaign: CampaignCardData }) {
-  const slotsRemaining = Math.max(0, campaign.creatorCountNeeded - campaign.creatorCountAccepted);
+export function CampaignCard({ campaign, index = 0 }: { campaign: CampaignCardData; index?: number }) {
   const urgency = urgencyLabel(campaign.applicationDeadline);
   const visual = campaignVisualFor(campaign.categoryName);
   const VisualIcon = visual.icon;
+  const meta = campaign.isRemote ? "Remote" : campaign.city;
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-oc-lg border border-oc-border bg-oc-card shadow-oc-sm transition duration-200 hover:-translate-y-1 hover:shadow-oc">
+    <div className={`group relative flex flex-col rounded-oc p-[18px] transition duration-200 hover:-translate-y-1 hover:shadow-oc ${tileAt(index)}`}>
       {campaign.featured && (
-        <span className="absolute left-3 top-3 z-10 inline-flex items-center rounded-full bg-oc-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white shadow-sm">
+        <span className="absolute left-6 top-6 z-10 inline-flex items-center rounded-full bg-oc-dark px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
           ★ Featured
         </span>
       )}
 
-      <Link href={`/campaigns/${campaign.slug}`} className="relative block aspect-[16/9] w-full overflow-hidden">
+      <Link href={`/campaigns/${campaign.slug}`} className="relative block h-[180px] w-full overflow-hidden rounded-oc-input">
         {campaign.coverImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element -- arbitrary admin-entered external
           // URL; next/image would require a wildcard remotePatterns allowlist for this one field,
@@ -79,59 +80,57 @@ export function CampaignCard({ campaign }: { campaign: CampaignCardData }) {
           />
         ) : null}
         <div
-          className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${visual.gradient} transition duration-300 group-hover:scale-105 ${campaign.coverImageUrl ? "hidden" : ""}`}
+          className={`flex h-full w-full items-center justify-center bg-white/35 transition duration-300 group-hover:scale-105 ${campaign.coverImageUrl ? "hidden" : ""}`}
         >
-          <VisualIcon className="h-10 w-10 text-white/70" strokeWidth={1.5} aria-hidden="true" />
+          <VisualIcon className="h-10 w-10 text-oc-ink/40" strokeWidth={1.5} aria-hidden="true" />
         </div>
-        {campaign.categoryName && (
-          <span className="absolute bottom-2.5 left-2.5 rounded-full bg-black/45 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
-            {campaign.categoryName}
-          </span>
-        )}
       </Link>
 
-      <div className="flex flex-1 flex-col p-5">
-        <div className="flex items-center gap-2">
-          <Avatar name={campaign.brandName} url={campaign.brandLogoUrl} size={24} />
-          <span className="text-sm font-medium text-oc-ink">{campaign.brandName}</span>
-          <VerificationBadge status={campaign.brandVerification} />
-        </div>
-
-        <Link href={`/campaigns/${campaign.slug}`} className="mt-3 block">
-          <h3 className="font-display text-base font-bold text-oc-ink line-clamp-2">{campaign.title}</h3>
+      <div className="mt-3.5 flex items-start justify-between gap-2">
+        <Link href={`/campaigns/${campaign.slug}`}>
+          <h3 className="font-display text-base font-bold leading-snug text-oc-ink line-clamp-2">{campaign.title}</h3>
         </Link>
-        <p className="mt-1 text-sm text-oc-ink-muted line-clamp-2">{campaign.shortDescription}</p>
+        {campaign.categoryName && (
+          <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-oc-ink">{campaign.categoryName}</span>
+        )}
+      </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs text-oc-ink-muted">
-          <span className="flex items-center gap-1.5">
-            <Wallet className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            {budgetLabel(campaign)}
-          </span>
-          <span className="flex items-center gap-1.5">
-            <Users className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            {slotsRemaining} of {campaign.creatorCountNeeded} slots
-          </span>
-          <span className="flex items-center gap-1.5">
-            <MapPin className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            {campaign.isRemote ? "Remote" : (campaign.city ?? "On-site")}
-          </span>
+      <div className="mt-1 flex items-center gap-1.5 text-xs text-oc-ink-muted">
+        <Avatar name={campaign.brandName} url={campaign.brandLogoUrl} size={16} />
+        <span>{campaign.brandName}</span>
+        <VerificationBadge status={campaign.brandVerification} />
+        <span aria-hidden="true">&middot;</span>
+        <span>{campaign.applicantCount ?? 0} applicants</span>
+      </div>
+
+      {(meta || urgency) && (
+        <div className="mt-1.5 flex items-center gap-3 text-[11px] text-oc-ink-muted/80">
+          {meta && (
+            <span className="flex items-center gap-1">
+              <MapPin className="h-3 w-3" aria-hidden="true" />
+              {meta}
+            </span>
+          )}
           {urgency && (
-            <span className="flex items-center gap-1.5 font-medium text-red-600">
-              <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="flex items-center gap-1 font-medium text-oc-700">
+              <Clock className="h-3 w-3" aria-hidden="true" />
               {urgency}
             </span>
           )}
         </div>
+      )}
 
-        <div className="mt-4 flex items-center justify-between border-t border-oc-border pt-4">
-          <CampaignStatusBadge status={campaign.status} />
-          <Link
-            href={`/campaigns/${campaign.slug}`}
-            className="inline-flex items-center gap-1 text-sm font-medium text-oc-700 transition group-hover:gap-1.5 hover:underline"
-          >
-            View Campaign <span aria-hidden="true">→</span>
-          </Link>
+      <div className="mt-4 flex items-end justify-between">
+        <div>
+          <p className="text-[11px] text-oc-ink-muted">Budget</p>
+          <p className="font-display text-lg font-extrabold text-oc-ink">{budgetLabel(campaign)}</p>
         </div>
+        <Link
+          href={`/campaigns/${campaign.slug}`}
+          className="inline-flex items-center gap-1 rounded-full bg-oc-dark px-4 py-2 text-xs font-semibold text-white hover:bg-black"
+        >
+          View <span aria-hidden="true">&raquo;</span>
+        </Link>
       </div>
     </div>
   );

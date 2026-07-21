@@ -4,7 +4,7 @@ import { eq, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { getDb, schema } from "@/lib/db";
-import { DashboardTabs } from "@/components/oc/DashboardTabs";
+import { DashboardSidebar } from "@/components/oc/DashboardSidebar";
 import { ShareProfileButton } from "@/components/oc/ShareProfileButton";
 
 export const metadata: Metadata = { title: "Creator Workspace", robots: { index: false, follow: false } };
@@ -50,30 +50,29 @@ export default async function CreatorDashboardLayout({ children }: { children: R
 
   return (
     <div className="min-h-screen bg-oc-bg pb-20 lg:pb-0">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="text-sm font-bold text-oc-700">
-            OpenCollab<span className="text-oc-ink">.id</span>
-          </Link>
-          {completion && <ShareProfileButton username={completion.username} variant="link" />}
-        </div>
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[220px_1fr]">
+        <DashboardSidebar items={TABS} accent="coral" />
+        <div>
+          {completion && (
+            <div className="flex justify-end">
+              <ShareProfileButton username={completion.username} variant="link" />
+            </div>
+          )}
 
-        {completion && completion.percent < 100 && (
-          <Link
-            href="/dashboard/creator/profile"
-            className="mt-4 flex items-center justify-between gap-3 rounded-oc-input border border-oc-300 bg-oc-300/10 px-4 py-2.5 text-sm hover:bg-oc-300/20"
-          >
-            <span className="text-oc-ink">
-              Your professional profile is <strong>{completion.percent}% complete</strong> — finish it so brands take you seriously.
-            </span>
-            <span className="shrink-0 font-medium text-oc-700">Complete now →</span>
-          </Link>
-        )}
+          {completion && completion.percent < 100 && (
+            <Link
+              href="/dashboard/creator/profile"
+              className="mt-2 flex items-center justify-between gap-3 rounded-oc-lg bg-tile-lavender px-5 py-4 text-sm hover:brightness-95"
+            >
+              <span className="text-oc-ink">
+                Your professional profile is <strong>{completion.percent}% complete</strong> — finish it so brands take you seriously.
+              </span>
+              <span className="shrink-0 font-semibold text-oc-ink">Complete now →</span>
+            </Link>
+          )}
 
-        <div className="mt-4">
-          <DashboardTabs items={TABS} />
+          <div className="mt-4">{children}</div>
         </div>
-        <div className="mt-6">{children}</div>
       </div>
     </div>
   );

@@ -1,10 +1,27 @@
 import Link from "next/link";
 import { desc, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
-import { CampaignCard } from "@/components/oc/CampaignCard";
+import { CampaignCard, type CampaignCardData } from "@/components/oc/CampaignCard";
 import { CreatorCard } from "@/components/oc/CreatorCard";
 import { BrandCard } from "@/components/oc/BrandCard";
 import { CountUp } from "@/components/oc/CountUp";
+import { formatIDR } from "@/components/oc/primitives";
+import { campaignVisualFor } from "@/lib/campaignVisuals";
+
+function heroBudgetLabel(c: CampaignCardData): string {
+  if (c.budgetType === "barter") return "Barter";
+  if (c.budgetType === "affiliate") return "Affiliate";
+  if (c.budgetType === "negotiable") return "Negotiable";
+  if (c.budgetPerCreator) return formatIDR(c.budgetPerCreator);
+  if (c.budgetMin) return formatIDR(c.budgetMin);
+  return "Negotiable";
+}
+
+const HERO_CARD_STYLES = [
+  { tile: "bg-tile-mustard", rotate: "rotate-[6deg]", pos: "right-10 top-8", size: "w-[230px]" },
+  { tile: "bg-tile-sky", rotate: "rotate-[-5deg]", pos: "left-2 top-[160px]", size: "w-[230px]" },
+  { tile: "bg-tile-blush", rotate: "rotate-[3deg]", pos: "right-0 bottom-8", size: "w-[200px]" },
+] as const;
 
 export const dynamic = "force-dynamic";
 
@@ -54,6 +71,7 @@ export default async function LandingPage() {
         brandLogoUrl: schema.brandProfiles.logoUrl,
         brandVerification: schema.brandProfiles.verificationStatus,
         featured: schema.campaigns.featured,
+        applicantCount: sql<number>`(select count(*) from campaign_applications ca where ca.campaign_id = campaigns.id)`,
       })
       .from(schema.campaigns)
       .innerJoin(schema.brandProfiles, eq(schema.brandProfiles.id, schema.campaigns.brandProfileId))
@@ -109,114 +127,97 @@ export default async function LandingPage() {
   return (
     <div>
       {/* Hero */}
-      <section className="relative grid gap-10 overflow-hidden rounded-oc-xl bg-oc-mesh px-6 py-12 sm:px-10 sm:py-16 lg:grid-cols-2 lg:items-center lg:gap-6">
+      <section className="relative grid gap-10 px-6 py-12 sm:px-10 sm:py-16 lg:grid-cols-2 lg:items-center lg:gap-6">
         <div className="relative z-10">
-          <p className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-oc-600 shadow-oc-sm">
-            🇮🇩 Indonesia&apos;s Creator Collaboration Network
+          <p className="inline-flex items-center gap-1.5 rounded-full bg-tile-lime px-4 py-1.5 text-xs font-semibold text-oc-ink">
+            ✦ {Number(totalApplications).toLocaleString()}+ collabs closed
           </p>
-          <h1 className="mt-4 max-w-xl font-display text-4xl font-extrabold leading-[1.08] text-oc-ink sm:text-5xl">
-            Find Brands. Find Creators.
-            <span className="text-oc-600"> Collaborate</span> Better.
+          <h1 className="mt-5 max-w-lg font-display text-5xl font-extrabold leading-[1.05] text-oc-ink">
+            Discover Creator
+            <br />
+            Collabs that fit.
           </h1>
-          <p className="mt-4 max-w-md text-[15px] leading-relaxed text-oc-ink-muted">
-            OpenCollab.id helps brands publish creator campaigns and helps creators discover transparent
-            collaboration opportunities in one structured marketplace.
+          <p className="mt-5 max-w-md text-[15px] leading-relaxed text-oc-ink-muted">
+            Browse real campaigns from real brands, build a profile that sells itself, and get paid to create.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/campaigns" className="rounded-full bg-oc-dark px-6 py-3 text-sm font-semibold text-white shadow-oc-sm hover:bg-black">
-              Explore Campaigns →
-            </Link>
-            <Link href="/register" className="rounded-full border border-oc-ink/15 bg-white px-6 py-3 text-sm font-semibold text-oc-ink hover:bg-oc-bg">
-              Create Your Profile
-            </Link>
-          </div>
-          <div className="mt-6 flex flex-wrap gap-2 text-xs font-medium">
-            <Link href="/register/creator" className="rounded-full bg-white px-4 py-1.5 text-oc-700 shadow-oc-sm hover:bg-oc-bg">
-              I&apos;m a Creator
-            </Link>
-            <Link href="/register/brand" className="rounded-full bg-white px-4 py-1.5 text-oc-700 shadow-oc-sm hover:bg-oc-bg">
-              I&apos;m a Brand
-            </Link>
-          </div>
-        </div>
 
-        {/* Floating photo collage */}
-        <div className="relative z-10 hidden h-[360px] lg:block">
-          <div className="absolute right-14 top-2 h-40 w-32 -rotate-6 overflow-hidden rounded-oc-lg border-4 border-white shadow-oc">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&q=70&auto=format&fit=crop"
-              alt="Creator portrait"
-              className="h-full w-full object-cover"
+          <form action="/marketplace" method="GET" className="mt-7 flex max-w-[420px] items-center gap-3 rounded-full bg-white p-2 pl-5 shadow-oc-sm">
+            <input
+              name="q"
+              placeholder="Search campaigns, creators, brands..."
+              className="w-full bg-transparent text-sm text-oc-ink placeholder:text-oc-subtle outline-none"
             />
-          </div>
-          <div className="absolute left-6 top-16 h-44 w-36 rotate-3 overflow-hidden rounded-oc-lg border-4 border-white shadow-oc">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&q=70&auto=format&fit=crop"
-              alt="Creator portrait"
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <div className="absolute bottom-4 right-0 h-40 w-32 rotate-6 overflow-hidden rounded-oc-lg border-4 border-white shadow-oc">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=300&q=70&auto=format&fit=crop"
-              alt="Creator portrait"
-              className="h-full w-full object-cover"
-            />
-          </div>
+            <button type="submit" className="shrink-0 rounded-full bg-oc-600 px-6 py-3 text-sm font-semibold text-white hover:bg-oc-700">
+              Search
+            </button>
+          </form>
 
-          <div className="absolute left-2 bottom-10 flex -rotate-3 items-center gap-3 rounded-oc-lg border border-oc-border bg-white p-3 shadow-oc">
-            <img
-              src="https://images.unsplash.com/photo-1580489944761-15a19d654956?w=80&q=70&auto=format&fit=crop"
-              alt="Brand representative"
-              className="h-11 w-11 rounded-full object-cover"
-            />
-            <div>
-              <p className="text-xs text-oc-ink-muted">Offered a collab</p>
-              <p className="text-sm font-bold text-oc-ink">Rp 15,000,000</p>
+          <div className="mt-7 flex flex-wrap gap-3.5">
+            <div className="rounded-2xl bg-tile-blush px-5 py-3.5">
+              <p className="font-display text-xl font-extrabold text-oc-ink">{Number(totalCreators)}+</p>
+              <p className="text-xs text-oc-ink-muted">Creators</p>
+            </div>
+            <div className="rounded-2xl bg-tile-lavender px-5 py-3.5">
+              <p className="font-display text-xl font-extrabold text-oc-ink">{Number(totalBrands)}+</p>
+              <p className="text-xs text-oc-ink-muted">Brands</p>
+            </div>
+            <div className="rounded-2xl bg-tile-sky px-5 py-3.5">
+              <p className="font-display text-xl font-extrabold text-oc-ink">
+                <CountUp value={Number(activeCampaigns)} />
+              </p>
+              <p className="text-xs text-oc-ink-muted">Campaigns</p>
             </div>
           </div>
+        </div>
 
-          <div className="absolute right-8 top-40 rotate-2 rounded-oc-lg border border-oc-border bg-white px-4 py-3 shadow-oc">
-            <p className="text-[11px] text-oc-ink-muted">Campaign slots</p>
-            <p className="font-display text-lg font-extrabold text-oc-600">3 / 5 filled</p>
-          </div>
-
-          <span className="absolute -left-6 -top-10 h-24 w-24 rounded-full bg-tile-butter opacity-70 blur-2xl" />
-          <span className="absolute bottom-0 right-16 h-28 w-28 rounded-full bg-tile-sky opacity-70 blur-2xl" />
+        {/* Floating campaign-card collage */}
+        <div className="relative z-10 hidden h-[440px] lg:block">
+          {featuredCampaigns.slice(0, 3).map((c, i) => {
+            const style = HERO_CARD_STYLES[i];
+            const visual = campaignVisualFor(c.categoryName);
+            const VisualIcon = visual.icon;
+            return (
+              <div
+                key={c.slug}
+                className={`absolute ${style.pos} ${style.size} ${style.rotate} ${style.tile} rounded-oc-lg p-4 shadow-oc`}
+              >
+                <Link href={`/campaigns/${c.slug}`} className="block h-[150px] w-full overflow-hidden rounded-oc-input bg-white/35">
+                  {c.coverImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={c.coverImageUrl} alt={c.coverImageAlt || c.title} className="h-full w-full object-cover" />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center">
+                      <VisualIcon className="h-9 w-9 text-oc-ink/40" strokeWidth={1.5} aria-hidden="true" />
+                    </div>
+                  )}
+                </Link>
+                <p className="mt-3 line-clamp-1 text-[15px] font-bold text-oc-ink">{c.title}</p>
+                <p className="mt-1 text-xs text-oc-ink-muted">
+                  {c.brandName} &middot; {c.categoryName ?? "General"}
+                </p>
+                <div className="mt-3 flex items-center justify-between">
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-oc-ink">{heroBudgetLabel(c)}</span>
+                  <Link href={`/campaigns/${c.slug}`} className="rounded-full bg-oc-dark px-3 py-1.5 text-xs font-semibold text-white">
+                    Apply
+                  </Link>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </section>
 
-      {/* Marketplace search */}
-      <section className="mt-8">
-        <form action="/marketplace" method="GET" className="flex gap-2 rounded-full border border-oc-border bg-oc-card p-1.5 shadow-oc-sm">
-          <input
-            name="q"
-            placeholder="Search campaigns, creators, brands, niches, or locations"
-            className="w-full rounded-full bg-transparent px-4 py-2.5 text-sm outline-none"
-          />
-          <button type="submit" className="shrink-0 rounded-full bg-oc-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-oc-700">
-            Search
-          </button>
-        </form>
-      </section>
-
-      {/* Platform stats */}
-      <section className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        {[
-          { label: "Registered Creators", value: Number(totalCreators), tile: "bg-tile-blush" },
-          { label: "Registered Brands", value: Number(totalBrands), tile: "bg-tile-sky" },
-          { label: "Active Campaigns", value: Number(activeCampaigns), tile: "bg-tile-butter" },
-          { label: "Applications Submitted", value: Number(totalApplications), tile: "bg-tile-mint" },
-        ].map((stat) => (
-          <div key={stat.label} className={`rounded-oc-lg p-4 text-center ${stat.tile}`}>
-            <p className="font-display text-2xl font-extrabold text-oc-ink">
-              <CountUp value={stat.value} />
-            </p>
-            <p className="mt-1 text-xs font-medium text-oc-ink-muted">{stat.label}</p>
-          </div>
+      {/* Category filter pills */}
+      <section className="mt-4 flex flex-wrap gap-2">
+        <span className="rounded-full bg-oc-dark px-5 py-2 text-sm font-semibold text-white">All</span>
+        {["Beauty", "Fashion", "Tech", "F&B", "Travel"].map((cat) => (
+          <Link
+            key={cat}
+            href={`/campaigns?category=${encodeURIComponent(cat)}`}
+            className="rounded-full border border-oc-border bg-white px-5 py-2 text-sm font-semibold text-oc-ink hover:border-oc-600"
+          >
+            {cat}
+          </Link>
         ))}
       </section>
 
@@ -224,14 +225,14 @@ export default async function LandingPage() {
       {featuredCampaigns.length > 0 && (
         <section className="mt-14">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-oc-ink">Featured Campaigns</h2>
+            <h2 className="font-display text-lg font-extrabold text-oc-ink">Featured Campaigns</h2>
             <Link href="/campaigns" className="text-sm font-medium text-oc-700 hover:underline">
               View all →
             </Link>
           </div>
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredCampaigns.map((c) => (
-              <CampaignCard key={c.slug} campaign={c} />
+            {featuredCampaigns.map((c, i) => (
+              <CampaignCard key={c.slug} campaign={c} index={i} />
             ))}
           </div>
         </section>
@@ -241,14 +242,14 @@ export default async function LandingPage() {
       {availableCreators.length > 0 && (
         <section className="mt-14">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-oc-ink">Available Creators</h2>
+            <h2 className="font-display text-lg font-extrabold text-oc-ink">Available Creators</h2>
             <Link href="/creators" className="text-sm font-medium text-oc-700 hover:underline">
               View all →
             </Link>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            {availableCreators.map((c) => (
-              <CreatorCard key={c.username} creator={c} />
+            {availableCreators.map((c, i) => (
+              <CreatorCard key={c.username} creator={c} index={i} />
             ))}
           </div>
         </section>
@@ -258,14 +259,14 @@ export default async function LandingPage() {
       {featuredBrands.length > 0 && (
         <section className="mt-14">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-bold text-oc-ink">Featured Brands</h2>
+            <h2 className="font-display text-lg font-extrabold text-oc-ink">Featured Brands</h2>
             <Link href="/brands" className="text-sm font-medium text-oc-700 hover:underline">
               View all →
             </Link>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
-            {featuredBrands.map((b) => (
-              <BrandCard key={b.slug} brand={b} />
+            {featuredBrands.map((b, i) => (
+              <BrandCard key={b.slug} brand={b} index={i} />
             ))}
           </div>
         </section>
@@ -278,8 +279,8 @@ export default async function LandingPage() {
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
           {[
             { step: "1", title: "Create your profile", body: "Brands post their company info; creators publish rates, availability, and portfolio.", tile: "bg-tile-blush" },
-            { step: "2", title: "Discover & apply", body: "Creators browse and apply to campaigns; brands browse and invite creators directly.", tile: "bg-tile-butter" },
-            { step: "3", title: "Collaborate", body: "Agree on terms directly and bring the campaign to life — OpenCollab keeps the process structured.", tile: "bg-tile-mint" },
+            { step: "2", title: "Discover & apply", body: "Creators browse and apply to campaigns; brands browse and invite creators directly.", tile: "bg-tile-mustard" },
+            { step: "3", title: "Collaborate", body: "Agree on terms directly and bring the campaign to life — OpenCollab keeps the process structured.", tile: "bg-tile-green" },
           ].map((item) => (
             <div key={item.step} className={`rounded-oc-lg p-6 text-center ${item.tile}`}>
               <div className="mx-auto flex h-9 w-9 items-center justify-center rounded-full bg-oc-dark text-sm font-bold text-white">
@@ -328,7 +329,7 @@ export default async function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="relative mt-14 overflow-hidden rounded-oc-xl bg-oc-gradient px-6 py-12 text-center text-white">
+      <section className="relative mt-14 overflow-hidden rounded-oc-xl bg-oc-600 px-6 py-12 text-center text-white">
         <span className="pointer-events-none absolute -left-8 -top-8 h-32 w-32 rounded-full bg-white/10" />
         <span className="pointer-events-none absolute -right-10 -bottom-10 h-40 w-40 rounded-full bg-white/10" />
         <h2 className="relative font-display text-2xl font-extrabold">Ready to collaborate?</h2>

@@ -8,53 +8,55 @@ export default {
   theme: {
     extend: {
       colors: {
-        // OpenCollab.id brand palette — warm coral/terracotta system (playful marketplace
-        // aesthetic) replacing the earlier lavender scheme. The pre-existing KOL Finder /
+        // OpenCollab.id "NFT-style redesign" palette — from the design handoff spec
+        // (claude.ai/design project 81a9ff59 — "OpenCollab NFT-Style Redesign.dc.html").
+        // Single coral accent (purple oc-600 retired), ink for dark surfaces/secondary CTAs,
+        // flat solid pastel fills for cards (no gradients). The pre-existing KOL Finder /
         // Business Leads areas keep using stock Tailwind slate/indigo and are untouched.
         oc: {
-          900: "#7A2410",
-          700: "#C93E20",
-          600: "#F2542D",
-          500: "#FF7A54",
-          400: "#FF9B7D",
-          300: "#FFC4AD",
-          bg: "#FFF8F2",
+          900: "#7A2C1A",
+          700: "#E85F3D",
+          600: "#FF7A59",
+          500: "#FF9478",
+          400: "#FFB39D",
+          300: "#FFD4C7",
+          bg: "#FFF8F0",
           card: "#FFFFFF",
-          dark: "#241812",
-          "dark-muted": "#A6947F",
-          ink: "#241812",
-          "ink-muted": "#8A7566",
-          border: "#F1E2D3",
+          dark: "#23262B",
+          "dark-muted": "#B7B2A4",
+          ink: "#23262B",
+          "ink-muted": "#5B5648",
+          subtle: "#8A8578",
+          teal: "#2FBFB5",
+          border: "#EDE3D2",
         },
-        // Cyclable pastel tile backgrounds for card art (avatars, cover fallbacks) — mirrors
-        // the colorful grid of tiles in the reference marketplace design.
+        // The 7 flat pastel fills cards rotate through — never more than one per row repeats.
         tile: {
-          mint: "#DDF3E1",
-          butter: "#FFF0BE",
-          sky: "#DCEBFB",
-          lavender: "#EAE1FB",
-          blush: "#FFE0D6",
-          sand: "#F5E9D6",
+          blush: "#FFC9C9",
+          lime: "#E4F26B",
+          mustard: "#FFC857",
+          lavender: "#C9B6F5",
+          sky: "#A0E7E5",
+          green: "#B6E5A0",
+          salmon: "#FFB4A2",
         },
-      },
-      backgroundImage: {
-        "oc-gradient": "linear-gradient(135deg, #FFB199 0%, #FF7A54 45%, #F2542D 100%)",
-        "oc-gradient-dark": "linear-gradient(135deg, #3A2A1E 0%, #241812 100%)",
-        // Warm mesh for hero/marketing surfaces only — dashboard and admin content areas
-        // intentionally keep the neutral oc-bg token for readability (per design brief:
-        // "public marketplace can be more visually expressive, admin/dashboard stay neutral").
-        "oc-mesh":
-          "radial-gradient(at 12% 15%, rgba(242,84,45,0.16) 0px, transparent 55%), radial-gradient(at 88% 12%, rgba(255,196,173,0.45) 0px, transparent 50%), radial-gradient(at 60% 92%, rgba(255,140,90,0.14) 0px, transparent 55%), #FFF8F2",
+        // Section-wrapper background tints (swap per-section on top of the cream base).
+        tint: {
+          cream: "#FFF8F0",
+          lavender: "#FBF1FF",
+          sky: "#F0FAFA",
+          peach: "#FFF3E9",
+        },
       },
       boxShadow: {
-        oc: "0 24px 48px -18px rgba(201,62,32,0.28)",
-        "oc-sm": "0 10px 24px -10px rgba(36,24,18,0.14)",
+        oc: "0 20px 40px -6px rgba(35,38,43,0.15)",
+        "oc-sm": "0 8px 24px -8px rgba(35,38,43,0.08)",
       },
       borderRadius: {
-        "oc-xl": "44px",
-        "oc-lg": "32px",
-        oc: "22px",
-        "oc-input": "16px",
+        "oc-xl": "40px",
+        "oc-lg": "36px",
+        oc: "28px",
+        "oc-input": "20px",
       },
       fontFamily: {
         sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],

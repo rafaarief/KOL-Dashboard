@@ -50,7 +50,7 @@ function LoginForm() {
 
   return (
     <div className="rounded-oc-lg border border-oc-border bg-oc-card p-8 shadow-oc">
-      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-oc-gradient text-sm font-bold text-white">OC</span>
+      <span className="flex h-10 w-10 items-center justify-center rounded-full bg-oc-600 text-sm font-bold text-white">OC</span>
       <h1 className="mt-4 font-display text-xl font-extrabold text-oc-ink">Log in to OpenCollab</h1>
       <p className="mt-1 text-sm text-oc-ink-muted">Welcome back — brands and creators sign in here.</p>
 

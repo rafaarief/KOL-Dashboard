@@ -9,11 +9,13 @@ export function SaveButton({
   targetId,
   initialSaved = false,
   label = "Save",
+  variant = "light",
 }: {
   endpoint: string;
   targetId: string;
   initialSaved?: boolean;
   label?: string;
+  variant?: "light" | "dark";
 }) {
   const { status } = useSession();
   const router = useRouter();
@@ -35,14 +37,15 @@ export function SaveButton({
     setBusy(false);
   }
 
+  const darkStyle = saved ? "border-oc-600 bg-oc-600/20 text-white" : "border-white/25 text-white hover:bg-white/10";
+  const lightStyle = saved ? "border-oc-600 bg-oc-300/10 text-oc-700" : "border-oc-border text-oc-ink hover:bg-oc-bg";
+
   return (
     <button
       type="button"
       onClick={toggle}
       disabled={busy}
-      className={`rounded-oc-input border px-4 py-2 text-sm font-medium transition ${
-        saved ? "border-oc-600 bg-oc-300/10 text-oc-700" : "border-oc-border text-oc-ink hover:bg-oc-bg"
-      }`}
+      className={`w-full rounded-full border px-4 py-3 text-sm font-semibold transition ${variant === "dark" ? darkStyle : lightStyle}`}
     >
       {saved ? "♥ Saved" : `♡ ${label}`}
     </button>

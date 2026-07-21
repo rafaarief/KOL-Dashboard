@@ -54,6 +54,7 @@ export default async function BrandProfilePage({ params }: { params: { slug: str
       categoryName: schema.marketplaceCategories.name,
       coverImageUrl: schema.campaigns.coverImageUrl,
       coverImageAlt: schema.campaigns.coverImageAlt,
+      applicantCount: sql<number>`(select count(*) from campaign_applications ca where ca.campaign_id = campaigns.id)`,
     })
     .from(schema.campaigns)
     .leftJoin(schema.marketplaceCategories, eq(schema.marketplaceCategories.id, schema.campaigns.categoryId))
@@ -163,8 +164,8 @@ export default async function BrandProfilePage({ params }: { params: { slug: str
         <section className="mt-8">
           <h2 className="text-sm font-semibold text-oc-ink">Active Campaigns</h2>
           <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {activeCampaigns.map((c) => (
-              <CampaignCard key={c.slug} campaign={{ ...c, brandName: brand.brandName, brandLogoUrl: brand.logoUrl, brandVerification: brand.verificationStatus }} />
+            {activeCampaigns.map((c, i) => (
+              <CampaignCard key={c.slug} campaign={{ ...c, brandName: brand.brandName, brandLogoUrl: brand.logoUrl, brandVerification: brand.verificationStatus }} index={i} />
             ))}
           </div>
         </section>

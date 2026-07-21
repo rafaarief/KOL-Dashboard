@@ -60,6 +60,7 @@ export async function listPublishedCampaigns(params: CampaignListParams) {
       brandLogoUrl: schema.brandProfiles.logoUrl,
       brandVerification: schema.brandProfiles.verificationStatus,
       featured: schema.campaigns.featured,
+      applicantCount: sql<number>`(select count(*) from campaign_applications ca where ca.campaign_id = campaigns.id)`,
     })
     .from(schema.campaigns)
     .innerJoin(schema.brandProfiles, eq(schema.brandProfiles.id, schema.campaigns.brandProfileId))

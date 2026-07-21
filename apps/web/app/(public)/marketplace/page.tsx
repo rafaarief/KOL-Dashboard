@@ -81,8 +81,8 @@ async function CampaignsTab({ q }: { q?: string }) {
         </div>
       ) : (
         <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {rows.map((c) => (
-            <CampaignCard key={c.slug} campaign={c} />
+          {rows.map((c, i) => (
+            <CampaignCard key={c.slug} campaign={c} index={i} />
           ))}
         </div>
       )}
@@ -101,8 +101,8 @@ async function CreatorsTab({ q }: { q?: string }) {
         </div>
       ) : (
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {rows.map((c) => (
-            <CreatorCard key={c.username} creator={c} />
+          {rows.map((c, i) => (
+            <CreatorCard key={c.username} creator={c} index={i} />
           ))}
         </div>
       )}
@@ -121,8 +121,8 @@ async function BrandsTab({ q }: { q?: string }) {
         </div>
       ) : (
         <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {rows.map((b) => (
-            <BrandCard key={b.slug} brand={b} />
+          {rows.map((b, i) => (
+            <BrandCard key={b.slug} brand={b} index={i} />
           ))}
         </div>
       )}

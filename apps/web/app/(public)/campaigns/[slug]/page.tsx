@@ -8,7 +8,7 @@ import { ApplyForm } from "@/components/oc/ApplyForm";
 import { SaveButton } from "@/components/oc/SaveButton";
 import { CampaignCard } from "@/components/oc/CampaignCard";
 import { ShareCampaignButton } from "@/components/oc/ShareProfileButton";
-import { Avatar, CampaignStatusBadge, VerificationBadge, formatIDR } from "@/components/oc/primitives";
+import { Avatar, VerificationBadge, formatIDR, tileForSeed } from "@/components/oc/primitives";
 import { campaignVisualFor } from "@/lib/campaignVisuals";
 
 export const dynamic = "force-dynamic";
@@ -159,6 +159,7 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
           brandLogoUrl: schema.brandProfiles.logoUrl,
           brandVerification: schema.brandProfiles.verificationStatus,
           featured: schema.campaigns.featured,
+          applicantCount: sql<number>`(select count(*) from campaign_applications ca where ca.campaign_id = campaigns.id)`,
         })
         .from(schema.campaigns)
         .innerJoin(schema.brandProfiles, eq(schema.brandProfiles.id, schema.campaigns.brandProfileId))
@@ -172,6 +173,9 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
   const VisualIcon = visual.icon;
   const slotsRemaining = Math.max(0, campaign.creatorCountNeeded - campaign.creatorCountAccepted);
   const deadlinePassed = Boolean(campaign.applicationDeadline && new Date(campaign.applicationDeadline) < new Date());
+  const daysLeft = campaign.applicationDeadline
+    ? Math.ceil((new Date(campaign.applicationDeadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
   const deliverables = Array.isArray(campaign.deliverables) ? (campaign.deliverables as string[]) : [];
 
   const jsonLd = {
@@ -201,13 +205,29 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
       {/* eslint-disable-next-line react/no-danger */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
       <div>
-        <div className={`relative flex h-40 items-center justify-center overflow-hidden rounded-oc-lg bg-gradient-to-br sm:h-52 ${visual.gradient}`}>
-          {campaign.coverImageUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={campaign.coverImageUrl} alt={campaign.coverImageAlt || campaign.title} className="h-full w-full object-cover" />
-          ) : (
-            <VisualIcon className="h-14 w-14 text-white/70" strokeWidth={1.5} aria-hidden="true" />
-          )}
+        <div className={`relative overflow-hidden rounded-oc-xl ${tileForSeed(campaign.slug)}`}>
+          <div className="relative h-[280px] w-full sm:h-[340px]">
+            {campaign.coverImageUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={campaign.coverImageUrl} alt={campaign.coverImageAlt || campaign.title} className="h-full w-full object-cover" />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-white/25">
+                <VisualIcon className="h-16 w-16 text-oc-ink/30" strokeWidth={1.5} aria-hidden="true" />
+              </div>
+            )}
+            {campaign.categoryName && (
+              <span className="absolute left-6 top-6 rounded-full bg-white px-4 py-1.5 text-xs font-bold text-oc-ink">{campaign.categoryName}</span>
+            )}
+            {daysLeft !== null && !deadlinePassed && (
+              <div className="absolute right-6 top-6 rounded-2xl bg-oc-dark px-4 py-2 text-center text-white">
+                <p className="font-display text-lg font-extrabold leading-none">{Math.max(0, daysLeft).toString().padStart(2, "0")}</p>
+                <p className="text-[10px] leading-none text-white/70">days left</p>
+              </div>
+            )}
+            <h1 className="absolute inset-x-6 bottom-6 font-display text-2xl font-extrabold text-white drop-shadow-[0_2px_12px_rgba(0,0,0,0.35)] sm:text-4xl">
+              {campaign.title}
+            </h1>
+          </div>
         </div>
 
         <div className="mt-4 flex items-center justify-between gap-2">
@@ -221,14 +241,6 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
           <ShareCampaignButton slug={campaign.slug} variant="link" />
         </div>
 
-        <h1 className="mt-3 font-display text-2xl font-extrabold text-oc-ink sm:text-3xl">{campaign.title}</h1>
-        <div className="mt-2 flex flex-wrap gap-2">
-          <CampaignStatusBadge status={campaign.status} />
-          {campaign.categoryName && (
-            <span className="rounded-full border border-oc-border px-2.5 py-0.5 text-xs text-oc-ink-muted">{campaign.categoryName}</span>
-          )}
-        </div>
-
         <p className="mt-4 text-sm text-oc-ink-muted">{campaign.shortDescription}</p>
 
         <section className="mt-6">
@@ -239,11 +251,13 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
         {deliverables.length > 0 && (
           <section className="mt-6">
             <h2 className="text-sm font-semibold text-oc-ink">Deliverables</h2>
-            <ul className="mt-2 list-inside list-disc text-sm text-oc-ink-muted">
+            <div className="mt-2 flex flex-wrap gap-2">
               {deliverables.map((item) => (
-                <li key={item}>{item}</li>
+                <span key={item} className="rounded-full bg-oc-card px-4 py-2 text-xs font-semibold text-oc-ink shadow-oc-sm">
+                  {item}
+                </span>
               ))}
-            </ul>
+            </div>
           </section>
         )}
 
@@ -288,8 +302,8 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
           <section className="mt-10">
             <h2 className="text-sm font-semibold text-oc-ink">Similar Campaigns</h2>
             <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {similarRaw.map((c) => (
-                <CampaignCard key={c.slug} campaign={c} />
+              {similarRaw.map((c, i) => (
+                <CampaignCard key={c.slug} campaign={c} index={i} />
               ))}
             </div>
           </section>
@@ -297,29 +311,30 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
       </div>
 
       <aside className="lg:sticky lg:top-24 lg:self-start">
-        <div className="rounded-oc-lg border border-oc-border bg-oc-card p-6 shadow-oc-sm">
-          <p className="font-display text-lg font-bold text-oc-600">{budgetLabel(campaign)}</p>
-          <p className="mt-1 text-xs text-oc-ink-muted">
+        <div className="rounded-oc-lg bg-oc-dark p-6 text-white">
+          <p className="text-xs text-oc-dark-muted">Total Budget</p>
+          <p className="font-display text-3xl font-extrabold">{budgetLabel(campaign)}</p>
+          <p className="mt-1 text-xs text-oc-dark-muted">
             {slotsRemaining} of {campaign.creatorCountNeeded} creator slots remaining
           </p>
 
-          <div className="mt-4">
+          <div className="mt-5">
             {deadlinePassed ? (
-              <p className="rounded-oc border border-oc-border bg-oc-bg p-3 text-xs text-oc-ink-muted">
+              <p className="rounded-full border border-white/20 p-3 text-center text-xs text-oc-dark-muted">
                 The application deadline for this campaign has passed.
               </p>
             ) : slotsRemaining <= 0 ? (
-              <p className="rounded-oc border border-oc-border bg-oc-bg p-3 text-xs text-oc-ink-muted">
+              <p className="rounded-full border border-white/20 p-3 text-center text-xs text-oc-dark-muted">
                 This campaign has filled all of its creator slots.
               </p>
             ) : !session ? (
-              <Link href={`/login?next=/campaigns/${campaign.slug}`} className="block w-full rounded-full bg-oc-dark px-4 py-2.5 text-center text-sm font-semibold text-white shadow-oc-sm hover:bg-black">
+              <Link href={`/login?next=/campaigns/${campaign.slug}`} className="block w-full rounded-full bg-oc-600 px-4 py-3 text-center text-sm font-bold text-white hover:bg-oc-700">
                 Log in to Apply
               </Link>
             ) : session.user.role === "creator" ? (
               <ApplyForm campaignId={campaign.id} socialAccounts={socialAccounts} />
             ) : (
-              <p className="rounded-oc border border-oc-border bg-oc-bg p-3 text-xs text-oc-ink-muted">
+              <p className="rounded-full border border-white/20 p-3 text-center text-xs text-oc-dark-muted">
                 Only creator accounts can apply to campaigns.
               </p>
             )}
@@ -327,7 +342,7 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
 
           {session?.user.role === "creator" && (
             <div className="mt-3">
-              <SaveButton endpoint="/api/creator/saved-campaigns" targetId={campaign.id} initialSaved={alreadySaved} label="Save Campaign" />
+              <SaveButton endpoint="/api/creator/saved-campaigns" targetId={campaign.id} initialSaved={alreadySaved} label="Save Campaign" variant="dark" />
             </div>
           )}
         </div>

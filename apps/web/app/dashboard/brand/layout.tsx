@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { DashboardTabs } from "@/components/oc/DashboardTabs";
+import { DashboardSidebar } from "@/components/oc/DashboardSidebar";
 
 export const metadata: Metadata = { title: "Brand Workspace", robots: { index: false, follow: false } };
 
@@ -16,14 +15,9 @@ const TABS = [
 export default function BrandDashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-oc-bg pb-20 lg:pb-0">
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6">
-        <Link href="/" className="text-sm font-bold text-oc-700">
-          OpenCollab<span className="text-oc-ink">.id</span>
-        </Link>
-        <div className="mt-4">
-          <DashboardTabs items={TABS} />
-        </div>
-        <div className="mt-6">{children}</div>
+      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[220px_1fr]">
+        <DashboardSidebar items={TABS} accent="teal" />
+        <div>{children}</div>
       </div>
     </div>
   );

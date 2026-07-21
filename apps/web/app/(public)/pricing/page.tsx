@@ -9,7 +9,7 @@ export default function PricingPage() {
       <h1 className="font-display text-2xl font-extrabold text-oc-ink sm:text-3xl">Pricing</h1>
       <p className="mt-2 text-sm text-oc-ink-muted">OpenCollab.id is free for both brands and creators during this MVP phase.</p>
 
-      <div className="mt-8 rounded-oc-lg border border-oc-border bg-tile-mint p-6 shadow-oc-sm">
+      <div className="mt-8 rounded-oc-lg border border-oc-border bg-tile-green p-6 shadow-oc-sm">
         <p className="font-display text-lg font-bold text-oc-ink">Free — for everyone, today</p>
         <ul className="mt-3 space-y-2 text-sm text-oc-ink-muted">
           <li>✓ Unlimited creator profiles</li>

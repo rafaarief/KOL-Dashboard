@@ -185,39 +185,73 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
   };
 
   return (
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
+    <div>
       {/* JSON.stringify does not escape "</" sequences, so a creator-controlled bio/headline
           containing literal "</script>" could break out of this tag and inject arbitrary
           HTML — escaping "<" defuses that without affecting the JSON-LD's validity. */}
       {/* eslint-disable-next-line react/no-danger */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c") }} />
-      <div>
-        <div className={`h-24 rounded-oc-lg ${tileForSeed(creator.username)}`} aria-hidden="true" />
-        <div className="-mt-10 flex items-start justify-between gap-3 px-2">
-          <div className="flex items-end gap-4">
-            <div className="rounded-full ring-4 ring-oc-bg">
-              <Avatar name={creator.displayName} url={creator.avatarUrl} size={80} />
-            </div>
-            <div className="pb-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="font-display text-xl font-extrabold text-oc-ink">{creator.displayName}</h1>
-                <VerificationBadge status={creator.verificationStatus} />
-                {creator.featured && (
-                  <span className="inline-flex items-center rounded-full bg-oc-600 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white">
-                    ★ Featured
-                  </span>
-                )}
-              </div>
-              <p className="text-sm text-oc-ink-muted">
-                @{creator.username}
-                {creator.city ? ` · ${creator.city}` : ""}
-              </p>
-              <p className="mt-1 text-sm font-medium text-oc-700">{headline}</p>
-            </div>
-          </div>
+
+      {/* Hero */}
+      <div className={`relative mb-8 overflow-hidden rounded-oc-xl p-8 sm:p-11 ${tileForSeed(creator.username)}`}>
+        <div className="absolute right-6 top-6 z-10">
           <ShareProfileButton username={creator.username} />
         </div>
+        <div className="grid gap-10 sm:grid-cols-[1.1fr_1fr] sm:items-center">
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="font-display text-3xl font-extrabold text-oc-ink sm:text-4xl">{creator.displayName}</h1>
+              <VerificationBadge status={creator.verificationStatus} />
+            </div>
+            <p className="mt-3 max-w-md text-[15px] leading-relaxed text-oc-ink/75">{headline}</p>
+            <p className="mt-1 text-sm text-oc-ink/60">
+              @{creator.username}
+              {creator.city ? ` · ${creator.city}` : ""}
+            </p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              {creator.featured && (
+                <span className="rounded-full bg-oc-dark px-3.5 py-1.5 text-xs font-semibold text-white">★ Featured</span>
+              )}
+              {creator.primaryNicheName && (
+                <span className="rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-oc-ink">{creator.primaryNicheName}</span>
+              )}
+              {creator.city && <span className="rounded-full bg-white px-3.5 py-1.5 text-xs font-semibold text-oc-ink">{creator.city}</span>}
+            </div>
+          </div>
 
+          <div className="relative mx-auto w-full max-w-[220px] sm:ml-auto sm:mr-4">
+            <div className="aspect-[11/14] w-full overflow-hidden rounded-oc-lg bg-white/40">
+              {creator.avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={creator.avatarUrl} alt={creator.displayName} className="h-full w-full object-cover" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center font-display text-4xl font-extrabold text-oc-ink/30">
+                  {creator.displayName.slice(0, 1)}
+                </div>
+              )}
+            </div>
+            <div className="absolute -top-4 left-0 rounded-2xl bg-white px-4 py-2.5 shadow-oc">
+              <p className="font-display text-lg font-extrabold text-oc-ink">{formatCompactNumber(totalFollowers)}</p>
+              <p className="text-[11px] text-oc-ink-muted">Followers</p>
+            </div>
+            {acceptanceRate !== null && (
+              <div className="absolute bottom-16 -left-8 rounded-2xl bg-tile-mustard px-4 py-2.5 shadow-oc">
+                <p className="font-display text-lg font-extrabold text-oc-ink">{acceptanceRate}%</p>
+                <p className="text-[11px] text-oc-ink/70">Acceptance</p>
+              </div>
+            )}
+            {creator.yearsOfExperience !== null && (
+              <div className="absolute -bottom-4 right-4 rounded-2xl bg-tile-sky px-4 py-2.5 shadow-oc">
+                <p className="font-display text-lg font-extrabold text-oc-ink">{creator.yearsOfExperience} yrs</p>
+                <p className="text-[11px] text-oc-ink/70">Experience</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_320px]">
+      <div>
         {creator.bio && (
           <section className="mt-6">
             <h2 className="text-sm font-semibold text-oc-ink">Professional Summary</h2>
@@ -366,8 +400,8 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
           <section className="mt-10">
             <h2 className="text-sm font-semibold text-oc-ink">Similar Creators</h2>
             <div className="mt-3 grid grid-cols-2 gap-4 sm:grid-cols-4">
-              {similar.map((c) => (
-                <CreatorCard key={c.username} creator={c} />
+              {similar.map((c, i) => (
+                <CreatorCard key={c.username} creator={c} index={i} />
               ))}
             </div>
           </section>
@@ -407,6 +441,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
           )}
         </div>
       </aside>
+      </div>
     </div>
   );
 }

@@ -75,8 +75,8 @@ export default async function CreatorsDirectoryPage({
         </div>
       ) : (
         <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {rows.map((creator) => (
-            <CreatorCard key={creator.username} creator={creator} />
+          {rows.map((creator, i) => (
+            <CreatorCard key={creator.username} creator={creator} index={i} />
           ))}
         </div>
       )}

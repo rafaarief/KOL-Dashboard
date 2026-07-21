@@ -55,8 +55,8 @@ export default async function BrandsDirectoryPage({
         </div>
       ) : (
         <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          {rows.map((brand) => (
-            <BrandCard key={brand.slug} brand={brand} />
+          {rows.map((brand, i) => (
+            <BrandCard key={brand.slug} brand={brand} index={i} />
           ))}
         </div>
       )}

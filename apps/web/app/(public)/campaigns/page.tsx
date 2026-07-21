@@ -76,8 +76,8 @@ export default async function CampaignsPage({
               key={c.slug}
               href={withToggledParam(searchParams, "category", c.slug)}
               aria-pressed={active}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                active ? "border-oc-600 bg-oc-600 text-white" : "border-oc-border bg-oc-card text-oc-ink-muted hover:border-oc-400 hover:text-oc-ink"
+              className={`rounded-full border px-4 py-1.5 text-sm font-semibold transition ${
+                active ? "border-oc-dark bg-oc-dark text-white" : "border-oc-border bg-oc-card text-oc-ink hover:border-oc-600"
               }`}
             >
               {c.name}
@@ -97,8 +97,8 @@ export default async function CampaignsPage({
         </div>
       ) : (
         <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {rows.map((campaign) => (
-            <CampaignCard key={campaign.slug} campaign={campaign} />
+          {rows.map((campaign, i) => (
+            <CampaignCard key={campaign.slug} campaign={campaign} index={i} />
           ))}
         </div>
       )}

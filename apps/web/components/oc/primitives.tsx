@@ -1,14 +1,22 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-const TILES = ["bg-tile-blush", "bg-tile-sky", "bg-tile-butter", "bg-tile-mint", "bg-tile-lavender", "bg-tile-sand"];
+// The 7 flat pastel fills from the design handoff spec — cards rotate through these in order
+// so no two adjacent cards in a row share a color (never more than one per row repeats).
+const PASTELS = ["blush", "lime", "mustard", "lavender", "sky", "green", "salmon"] as const;
 
-/** Deterministically picks one of the pastel tile backgrounds from a name/id string, so the
- * same creator or brand always renders with the same tile color across renders. */
+/** Picks a pastel tile by position in a list (grid card rows) — sequential, so adjacent cards
+ * never repeat a color within a single row. */
+export function tileAt(index: number): string {
+  return `bg-tile-${PASTELS[index % PASTELS.length]}`;
+}
+
+/** Deterministically picks a pastel tile from a name/id string — for single-instance contexts
+ * (a profile header banner) where there's no row position to cycle against. */
 export function tileForSeed(seed: string): string {
   let hash = 0;
   for (let i = 0; i < seed.length; i++) hash = (hash * 31 + seed.charCodeAt(i)) | 0;
-  return TILES[Math.abs(hash) % TILES.length];
+  return `bg-tile-${PASTELS[Math.abs(hash) % PASTELS.length]}`;
 }
 
 export function OcCard({ children, className = "" }: { children: ReactNode; className?: string }) {
