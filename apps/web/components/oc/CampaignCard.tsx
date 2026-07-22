@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Clock, MapPin } from "lucide-react";
-import { Avatar, VerificationBadge, formatIDR, tileAt } from "./primitives";
+import { Clock, MapPin, Users } from "lucide-react";
+import { Avatar, CampaignStatusBadge, VerificationBadge, formatIDR, tileAt } from "./primitives";
 import { campaignVisualFor } from "@/lib/campaignVisuals";
 
 export interface CampaignCardData {
@@ -53,7 +53,8 @@ export function CampaignCard({ campaign, index = 0 }: { campaign: CampaignCardDa
   const urgency = urgencyLabel(campaign.applicationDeadline);
   const visual = campaignVisualFor(campaign.categoryName);
   const VisualIcon = visual.icon;
-  const meta = campaign.isRemote ? "Remote" : campaign.city;
+  const meta = campaign.isRemote ? "Remote" : (campaign.city ?? "On-site");
+  const slotsRemaining = Math.max(0, campaign.creatorCountNeeded - campaign.creatorCountAccepted);
 
   return (
     <div className={`group relative flex flex-col rounded-oc p-[18px] transition duration-200 hover:-translate-y-1 hover:shadow-oc ${tileAt(index)}`}>
@@ -90,9 +91,12 @@ export function CampaignCard({ campaign, index = 0 }: { campaign: CampaignCardDa
         <Link href={`/campaigns/${campaign.slug}`}>
           <h3 className="font-display text-base font-bold leading-snug text-oc-ink line-clamp-2">{campaign.title}</h3>
         </Link>
-        {campaign.categoryName && (
-          <span className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-oc-ink">{campaign.categoryName}</span>
-        )}
+        <div className="flex shrink-0 items-center gap-1.5">
+          <CampaignStatusBadge status={campaign.status} />
+          {campaign.categoryName && (
+            <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-oc-ink">{campaign.categoryName}</span>
+          )}
+        </div>
       </div>
 
       <div className="mt-1 flex items-center gap-1.5 text-xs text-oc-ink-muted">
@@ -103,22 +107,24 @@ export function CampaignCard({ campaign, index = 0 }: { campaign: CampaignCardDa
         <span>{campaign.applicantCount ?? 0} applicants</span>
       </div>
 
-      {(meta || urgency) && (
-        <div className="mt-1.5 flex items-center gap-3 text-[11px] text-oc-ink-muted/80">
-          {meta && (
-            <span className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" aria-hidden="true" />
-              {meta}
-            </span>
-          )}
-          {urgency && (
-            <span className="flex items-center gap-1 font-medium text-oc-700">
-              <Clock className="h-3 w-3" aria-hidden="true" />
-              {urgency}
-            </span>
-          )}
-        </div>
-      )}
+      <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[11px] text-oc-ink-muted/80">
+        <span className={`flex items-center gap-1 ${slotsRemaining <= 0 ? "font-medium text-red-600" : ""}`}>
+          <Users className="h-3 w-3" aria-hidden="true" />
+          {slotsRemaining <= 0 ? "Fully booked" : `${slotsRemaining} of ${campaign.creatorCountNeeded} slots`}
+        </span>
+        {meta && (
+          <span className="flex items-center gap-1">
+            <MapPin className="h-3 w-3" aria-hidden="true" />
+            {meta}
+          </span>
+        )}
+        {urgency && (
+          <span className="flex items-center gap-1 font-medium text-oc-700">
+            <Clock className="h-3 w-3" aria-hidden="true" />
+            {urgency}
+          </span>
+        )}
+      </div>
 
       <div className="mt-4 flex items-end justify-between">
         <div>

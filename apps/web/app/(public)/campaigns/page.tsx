@@ -6,6 +6,7 @@ import { listPublishedCampaigns } from "@/lib/marketplaceQueries";
 import { withPage, withToggledParam } from "@/lib/searchParamsHref";
 import { CampaignCard } from "@/components/oc/CampaignCard";
 import { EmptyState } from "@/components/oc/primitives";
+import { BUDGET_TYPE_BARTER } from "@/lib/marketplaceEnums";
 
 export const dynamic = "force-dynamic";
 
@@ -57,7 +58,7 @@ export default async function CampaignsPage({
         <select name="budgetType" defaultValue={params.budgetType ?? ""} className="rounded-full border border-oc-border bg-oc-card px-4 py-2 text-sm">
           <option value="">Money or Barter</option>
           <option value="money">Money (paid)</option>
-          <option value="barter">Barter Value</option>
+          <option value={BUDGET_TYPE_BARTER}>Barter Value</option>
         </select>
         <input
           name="minBudget"

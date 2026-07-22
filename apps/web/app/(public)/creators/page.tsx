@@ -5,6 +5,7 @@ import { withPage } from "@/lib/searchParamsHref";
 import { CreatorCard } from "@/components/oc/CreatorCard";
 import { EmptyState } from "@/components/oc/primitives";
 import { KOL_SEGMENT_LABELS, KOL_SEGMENTS } from "@/lib/kolSegment";
+import { FEE_TYPE_BARTER, FEE_TYPE_PAID } from "@/lib/marketplaceEnums";
 
 export const dynamic = "force-dynamic";
 
@@ -74,8 +75,8 @@ export default async function CreatorsDirectoryPage({
         </select>
         <select name="feeType" defaultValue={params.feeType ?? ""} className="rounded-full border border-oc-border bg-oc-card px-4 py-2 text-sm">
           <option value="">Fee or barter</option>
-          <option value="paid">Has a KOL fee</option>
-          <option value="barter">Open for Barter Value</option>
+          <option value={FEE_TYPE_PAID}>Has a KOL fee</option>
+          <option value={FEE_TYPE_BARTER}>Open for Barter Value</option>
         </select>
         <input
           name="minFee"

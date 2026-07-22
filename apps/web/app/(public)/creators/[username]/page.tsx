@@ -7,7 +7,7 @@ import { SaveButton } from "@/components/oc/SaveButton";
 import { ShareProfileButton } from "@/components/oc/ShareProfileButton";
 import { CreatorCard } from "@/components/oc/CreatorCard";
 import { Avatar, AvailabilityBadge, CategoryChip, VerificationBadge, formatCompactNumber, formatIDR, tileForSeed } from "@/components/oc/primitives";
-import { KOL_SEGMENT_LABELS, kolSegmentFromCount } from "@/lib/kolSegment";
+import { KOL_SEGMENT_LABELS, igFollowersSql, kolSegmentFromCount, tiktokFollowersSql } from "@/lib/kolSegment";
 
 export const dynamic = "force-dynamic";
 
@@ -60,7 +60,7 @@ export async function generateMetadata({ params }: { params: { username: string 
 
   const title = `${creator.displayName} (@${creator.username})`;
   const description =
-    creator.headline || creator.bio || `${creator.displayName} is a KOL on OpenCollab.id, Indonesia's professional network for KOL collaborations.`;
+    creator.headline || creator.bio || `${creator.displayName} is a KOL on OpenCollab.id, Indonesia's professional network for brand-KOL collaborations.`;
 
   const ogImage = `/api/og/creators/${creator.username}`;
 
@@ -93,7 +93,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
 
   const [socialAccounts, rateCards, portfolioItems, brandExperiences, contentCategories, similar, trackRecordRows] = await Promise.all([
     db
-      .select({ id: schema.creatorSocialAccounts.id, platformName: schema.platforms.name, username: schema.creatorSocialAccounts.username, followerCount: schema.creatorSocialAccounts.followerCount, averageViews: schema.creatorSocialAccounts.averageViews, engagementRate: schema.creatorSocialAccounts.engagementRate, profileUrl: schema.creatorSocialAccounts.profileUrl })
+      .select({ id: schema.creatorSocialAccounts.id, platformName: schema.platforms.name, platformSlug: schema.platforms.slug, username: schema.creatorSocialAccounts.username, followerCount: schema.creatorSocialAccounts.followerCount, averageViews: schema.creatorSocialAccounts.averageViews, engagementRate: schema.creatorSocialAccounts.engagementRate, profileUrl: schema.creatorSocialAccounts.profileUrl })
       .from(schema.creatorSocialAccounts)
       .innerJoin(schema.platforms, eq(schema.platforms.id, schema.creatorSocialAccounts.platformId))
       .where(eq(schema.creatorSocialAccounts.creatorProfileId, creator.id)),
@@ -115,11 +115,14 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
             availabilityStatus: schema.creatorProfiles.availabilityStatus,
             verificationStatus: schema.creatorProfiles.verificationStatus,
             minimumBudget: schema.creatorProfiles.minimumBudget,
+            acceptsBarter: schema.creatorProfiles.acceptsBarter,
             slotsRemaining: schema.creatorProfiles.slotsRemaining,
             monthlyCapacity: schema.creatorProfiles.monthlyCapacity,
             primaryNicheName: schema.niches.name,
             featured: schema.creatorProfiles.featured,
             totalFollowers: sql<number>`(select coalesce(sum(csa.follower_count), 0) from creator_social_accounts csa where csa.creator_profile_id = creator_profiles.id)`,
+            igFollowers: igFollowersSql,
+            tiktokFollowers: tiktokFollowersSql,
             lastLoginAt: schema.users.lastLoginAt,
           })
           .from(schema.creatorProfiles)
@@ -127,6 +130,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
           .leftJoin(schema.users, eq(schema.users.id, schema.creatorProfiles.userId))
           .where(and(eq(schema.creatorProfiles.primaryNicheId, creator.primaryNicheId), ne(schema.creatorProfiles.id, creator.id), eq(schema.creatorProfiles.status, "active")))
           .limit(4)
+          .then((rows) => rows.map((row) => ({ ...row, kolSegment: kolSegmentFromCount(Math.max(row.igFollowers, row.tiktokFollowers)) })))
       : Promise.resolve([]),
     // Real collaboration track record, not a fabricated stat — derived from this creator's
     // own campaign_applications rows. Response time is approximated as the average gap
@@ -145,8 +149,8 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
   const totalFollowers = socialAccounts.reduce((sum, acc) => sum + (acc.followerCount ?? 0), 0);
   // Segment tracks whichever platform is the KOL's strongest (never summed) — a KOL with 15k on
   // Instagram but only 9k on TikTok is a Mikro KOL off the 15k, not off a blended 24k.
-  const igFollowers = socialAccounts.filter((a) => a.platformName === "Instagram").reduce((sum, acc) => sum + (acc.followerCount ?? 0), 0);
-  const tiktokFollowers = socialAccounts.filter((a) => a.platformName === "TikTok").reduce((sum, acc) => sum + (acc.followerCount ?? 0), 0);
+  const igFollowers = socialAccounts.filter((a) => a.platformSlug === "instagram").reduce((sum, acc) => sum + (acc.followerCount ?? 0), 0);
+  const tiktokFollowers = socialAccounts.filter((a) => a.platformSlug === "tiktok").reduce((sum, acc) => sum + (acc.followerCount ?? 0), 0);
   const kolSegment = kolSegmentFromCount(Math.max(igFollowers, tiktokFollowers));
 
   const trackRecord = (trackRecordRows as unknown as { total: number; accepted: number; rejected: number; avg_response_days: string | null }[])[0];
@@ -266,7 +270,7 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
           </section>
         )}
 
-        {(contentCategories.length > 0 || languages.length > 0 || creator.yearsOfExperience) && (
+        {(contentCategories.length > 0 || languages.length > 0 || creator.yearsOfExperience !== null) && (
           <section className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
             {contentCategories.length > 0 && (
               <div>

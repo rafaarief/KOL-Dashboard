@@ -31,7 +31,6 @@ const BUTTON_BASE =
 const BUTTON_VARIANTS = {
   primary: "bg-oc-600 text-white shadow-oc-sm hover:bg-oc-700",
   secondary: "border border-oc-ink/15 text-oc-ink bg-white hover:bg-oc-bg",
-  dark: "bg-oc-dark text-white shadow-oc-sm hover:bg-black",
   destructive: "bg-red-600 text-white hover:bg-red-700",
   ghost: "text-oc-ink-muted hover:text-oc-ink hover:bg-oc-bg",
 } as const;

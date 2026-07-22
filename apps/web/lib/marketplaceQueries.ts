@@ -1,8 +1,17 @@
 import { and, asc, desc, eq, gte, ilike, lte, ne, or, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
-import { KOL_SEGMENT_THRESHOLDS, igFollowersSql, kolSegmentDriverSql, kolSegmentSql, tiktokFollowersSql, type KolSegment } from "@/lib/kolSegment";
+import { KOL_SEGMENT_THRESHOLDS, igFollowersSql, kolSegmentDriverSql, kolSegmentFromCount, tiktokFollowersSql, type KolSegment } from "@/lib/kolSegment";
+import { BUDGET_TYPE_BARTER, FEE_TYPE_BARTER, FEE_TYPE_PAID } from "@/lib/marketplaceEnums";
 
 const PAGE_SIZE = 12;
+
+/** Query-string numeric filters must degrade to "no filter" on garbage input, not crash the
+ * page — Postgres throws a hard error on `numeric_column >= 'abc'` rather than coercing it,
+ * so any unvalidated string reaching gte/lte here 500s the request. */
+function parseNumericFilter(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  return Number.isFinite(Number(raw)) ? raw : undefined;
+}
 
 export interface CampaignListParams {
   q?: string;
@@ -37,10 +46,12 @@ export async function listPublishedCampaigns(params: CampaignListParams) {
   }
   if (params.category) conditions.push(eq(schema.marketplaceCategories.slug, params.category));
   if (params.city) conditions.push(eq(schema.campaigns.city, params.city));
-  if (params.budgetType === "barter") conditions.push(eq(schema.campaigns.budgetType, "barter"));
-  if (params.budgetType === "money") conditions.push(ne(schema.campaigns.budgetType, "barter"));
-  if (params.minBudget) conditions.push(gte(effectiveBudgetSql, params.minBudget));
-  if (params.maxBudget) conditions.push(lte(effectiveBudgetSql, params.maxBudget));
+  if (params.budgetType === BUDGET_TYPE_BARTER) conditions.push(eq(schema.campaigns.budgetType, BUDGET_TYPE_BARTER));
+  if (params.budgetType === "money") conditions.push(ne(schema.campaigns.budgetType, BUDGET_TYPE_BARTER));
+  const minBudget = parseNumericFilter(params.minBudget);
+  const maxBudget = parseNumericFilter(params.maxBudget);
+  if (minBudget) conditions.push(gte(effectiveBudgetSql, minBudget));
+  if (maxBudget) conditions.push(lte(effectiveBudgetSql, maxBudget));
 
   const sortColumns =
     params.sort === "highest_budget"
@@ -141,10 +152,12 @@ export async function listActiveCreators(params: CreatorListParams) {
   if (params.niche) conditions.push(eq(schema.niches.slug, params.niche));
   if (params.city) conditions.push(eq(schema.creatorProfiles.city, params.city));
   if (params.availability) conditions.push(eq(schema.creatorProfiles.availabilityStatus, params.availability));
-  if (params.feeType === "barter") conditions.push(eq(schema.creatorProfiles.acceptsBarter, true));
-  if (params.feeType === "paid") conditions.push(sql`${schema.creatorProfiles.minimumBudget} is not null`);
-  if (params.minFee) conditions.push(gte(schema.creatorProfiles.minimumBudget, params.minFee));
-  if (params.maxFee) conditions.push(lte(schema.creatorProfiles.minimumBudget, params.maxFee));
+  if (params.feeType === FEE_TYPE_BARTER) conditions.push(eq(schema.creatorProfiles.acceptsBarter, true));
+  if (params.feeType === FEE_TYPE_PAID) conditions.push(sql`${schema.creatorProfiles.minimumBudget} is not null`);
+  const minFee = parseNumericFilter(params.minFee);
+  const maxFee = parseNumericFilter(params.maxFee);
+  if (minFee) conditions.push(gte(schema.creatorProfiles.minimumBudget, minFee));
+  if (maxFee) conditions.push(lte(schema.creatorProfiles.minimumBudget, maxFee));
   if (params.segment) {
     const segmentCondition = segmentRangeCondition(params.segment);
     if (segmentCondition) conditions.push(segmentCondition);
@@ -155,8 +168,13 @@ export async function listActiveCreators(params: CreatorListParams) {
       ? [asc(schema.creatorProfiles.minimumBudget)]
       : [desc(schema.creatorProfiles.featured), desc(schema.creatorProfiles.createdAt)];
 
-  const whereClause = and(...conditions);
   const followersSubquery = sql<number>`(select coalesce(sum(csa.follower_count), 0) from creator_social_accounts csa where csa.creator_profile_id = creator_profiles.id)`;
+  // minFollowers is folded into whereClause itself (rather than only the rows query) so the
+  // count query below stays in sync with it — previously the count ignored this filter entirely,
+  // so pagination totals didn't match the actual (smaller) filtered result set.
+  const minFollowers = Number.isFinite(Number(params.minFollowers)) ? Number.parseInt(params.minFollowers!, 10) : undefined;
+  if (minFollowers !== undefined) conditions.push(gte(followersSubquery, minFollowers));
+  const whereClause = and(...conditions);
 
   const rows = await db
     .select({
@@ -174,16 +192,13 @@ export async function listActiveCreators(params: CreatorListParams) {
       totalFollowers: followersSubquery,
       igFollowers: igFollowersSql,
       tiktokFollowers: tiktokFollowersSql,
-      kolSegment: kolSegmentSql,
       featured: schema.creatorProfiles.featured,
       lastLoginAt: schema.users.lastLoginAt,
     })
     .from(schema.creatorProfiles)
     .leftJoin(schema.niches, eq(schema.niches.id, schema.creatorProfiles.primaryNicheId))
     .leftJoin(schema.users, eq(schema.users.id, schema.creatorProfiles.userId))
-    .where(
-      params.minFollowers ? and(whereClause, gte(followersSubquery, Number.parseInt(params.minFollowers, 10))) : whereClause
-    )
+    .where(whereClause)
     .orderBy(...(params.sort === "highest_followers" ? [desc(followersSubquery)] : sortColumns))
     .limit(PAGE_SIZE)
     .offset((page - 1) * PAGE_SIZE);
@@ -194,7 +209,17 @@ export async function listActiveCreators(params: CreatorListParams) {
     .leftJoin(schema.niches, eq(schema.niches.id, schema.creatorProfiles.primaryNicheId))
     .where(whereClause);
 
-  return { rows, total: Number(count), page, pageSize: PAGE_SIZE, totalPages: Math.max(1, Math.ceil(Number(count) / PAGE_SIZE)) };
+  // kolSegment is derived here (rather than selected via kolSegmentSql) so the paginated listing
+  // only pays for the igFollowers/tiktokFollowers subqueries once per row instead of the ~6
+  // additional correlated-subquery re-embeds kolSegmentSql's CASE expression would otherwise add
+  // per row purely to recompute a value from columns already sitting right here.
+  return {
+    rows: rows.map((row) => ({ ...row, kolSegment: kolSegmentFromCount(Math.max(row.igFollowers, row.tiktokFollowers)) })),
+    total: Number(count),
+    page,
+    pageSize: PAGE_SIZE,
+    totalPages: Math.max(1, Math.ceil(Number(count) / PAGE_SIZE)),
+  };
 }
 
 export interface BrandListParams {

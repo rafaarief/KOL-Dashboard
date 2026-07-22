@@ -19,13 +19,17 @@ const TABS = [
   { value: "brands", label: "Brands" },
 ] as const;
 
+function str(value: string | string[] | undefined): string | undefined {
+  return typeof value === "string" ? value : undefined;
+}
+
 export default async function MarketplacePage({
   searchParams,
 }: {
   searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const tab = typeof searchParams.tab === "string" ? searchParams.tab : "campaigns";
-  const q = typeof searchParams.q === "string" ? searchParams.q : undefined;
+  const tab = str(searchParams.tab) ?? "campaigns";
+  const q = str(searchParams.q);
 
   return (
     <div>
@@ -59,19 +63,30 @@ export default async function MarketplacePage({
 
       <div className="mt-6">
         {tab === "creators" ? (
-          <CreatorsTab q={q} />
+          <CreatorsTab
+            q={q}
+            segment={str(searchParams.segment)}
+            feeType={str(searchParams.feeType)}
+            minFee={str(searchParams.minFee)}
+            maxFee={str(searchParams.maxFee)}
+          />
         ) : tab === "brands" ? (
           <BrandsTab q={q} />
         ) : (
-          <CampaignsTab q={q} />
+          <CampaignsTab
+            q={q}
+            budgetType={str(searchParams.budgetType)}
+            minBudget={str(searchParams.minBudget)}
+            maxBudget={str(searchParams.maxBudget)}
+          />
         )}
       </div>
     </div>
   );
 }
 
-async function CampaignsTab({ q }: { q?: string }) {
-  const { rows, total } = await listPublishedCampaigns({ q });
+async function CampaignsTab({ q, budgetType, minBudget, maxBudget }: { q?: string; budgetType?: string; minBudget?: string; maxBudget?: string }) {
+  const { rows, total } = await listPublishedCampaigns({ q, budgetType, minBudget, maxBudget });
   return (
     <>
       <p className="text-xs text-oc-ink-muted">{total.toLocaleString()} campaigns</p>
@@ -90,8 +105,20 @@ async function CampaignsTab({ q }: { q?: string }) {
   );
 }
 
-async function CreatorsTab({ q }: { q?: string }) {
-  const { rows, total } = await listActiveCreators({ q });
+async function CreatorsTab({
+  q,
+  segment,
+  feeType,
+  minFee,
+  maxFee,
+}: {
+  q?: string;
+  segment?: string;
+  feeType?: string;
+  minFee?: string;
+  maxFee?: string;
+}) {
+  const { rows, total } = await listActiveCreators({ q, segment, feeType, minFee, maxFee });
   return (
     <>
       <p className="text-xs text-oc-ink-muted">{total.toLocaleString()} KOLs</p>

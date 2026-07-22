@@ -7,13 +7,14 @@ import { BrandCard } from "@/components/oc/BrandCard";
 import { CountUp } from "@/components/oc/CountUp";
 import { formatIDR } from "@/components/oc/primitives";
 import { campaignVisualFor } from "@/lib/campaignVisuals";
-import { kolSegmentSql } from "@/lib/kolSegment";
+import { igFollowersSql, kolSegmentFromCount, tiktokFollowersSql } from "@/lib/kolSegment";
 
 function heroBudgetLabel(c: CampaignCardData): string {
   if (c.budgetType === "barter") return "Barter";
   if (c.budgetType === "affiliate") return "Affiliate";
   if (c.budgetType === "negotiable") return "Negotiable";
   if (c.budgetPerCreator) return formatIDR(c.budgetPerCreator);
+  if (c.budgetMin && c.budgetMax) return `${formatIDR(c.budgetMin)}–${formatIDR(c.budgetMax)}`;
   if (c.budgetMin) return formatIDR(c.budgetMin);
   return "Negotiable";
 }
@@ -94,14 +95,18 @@ export default async function LandingPage() {
         monthlyCapacity: schema.creatorProfiles.monthlyCapacity,
         primaryNicheName: schema.niches.name,
         totalFollowers: sql<number>`(select coalesce(sum(csa.follower_count), 0) from creator_social_accounts csa where csa.creator_profile_id = creator_profiles.id)`,
-        kolSegment: kolSegmentSql,
+        igFollowers: igFollowersSql,
+        tiktokFollowers: tiktokFollowersSql,
         featured: schema.creatorProfiles.featured,
+        lastLoginAt: schema.users.lastLoginAt,
       })
       .from(schema.creatorProfiles)
       .leftJoin(schema.niches, eq(schema.niches.id, schema.creatorProfiles.primaryNicheId))
+      .leftJoin(schema.users, eq(schema.users.id, schema.creatorProfiles.userId))
       .where(eq(schema.creatorProfiles.status, "active"))
       .orderBy(desc(schema.creatorProfiles.featured), desc(schema.creatorProfiles.createdAt))
-      .limit(8),
+      .limit(8)
+      .then((rows) => rows.map((row) => ({ ...row, kolSegment: kolSegmentFromCount(Math.max(row.igFollowers, row.tiktokFollowers)) }))),
     db
       .select({
         slug: schema.brandProfiles.slug,
