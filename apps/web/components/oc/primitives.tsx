@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { OUTREACH_STATUS_LABELS, OUTREACH_STATUS_TONE } from "@/lib/outreachEnums";
 
 // The 7 flat pastel fills from the design handoff spec — cards rotate through these in order
 // so no two adjacent cards in a row share a color (never more than one per row repeats).
@@ -124,6 +125,10 @@ const CAMPAIGN_STATUS_LABELS: Record<string, { label: string; tone: keyof typeof
 export function CampaignStatusBadge({ status }: { status: string }) {
   const entry = CAMPAIGN_STATUS_LABELS[status] ?? CAMPAIGN_STATUS_LABELS.draft;
   return <OcBadge tone={entry.tone}>{entry.label}</OcBadge>;
+}
+
+export function OutreachStatusBadge({ status }: { status: string }) {
+  return <OcBadge tone={OUTREACH_STATUS_TONE[status] ?? "neutral"}>{OUTREACH_STATUS_LABELS[status] ?? status}</OcBadge>;
 }
 
 export function BudgetPill({ text }: { text: string }) {

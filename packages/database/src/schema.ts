@@ -1,5 +1,6 @@
 import { relations } from "drizzle-orm";
 import {
+  type AnyPgColumn,
   bigint,
   boolean,
   index,
@@ -15,7 +16,8 @@ import {
 
 /** `role` is a free-text column (not a DB enum) so the pre-existing "specialist" rows used by
  * internal KOL Finder automation (see getDefaultUserId()) keep working untouched. OpenCollab
- * app code should only ever write "creator" | "brand" | "admin" | "specialist" here. */
+ * app code should only ever write "creator" | "brand" | "admin" | "outreach_admin" | "specialist"
+ * here. */
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().defaultRandom(),
   email: text("email").notNull().unique(),
@@ -24,6 +26,11 @@ export const users = pgTable("users", {
   passwordHash: text("password_hash"),
   // active | suspended — enforced at login in auth.ts, not just hidden in the UI.
   status: text("status").notNull().default("active"),
+  // Set when an outreach_admin creates this account on the KOL's/Brand's behalf (Outreach CRM
+  // manual onboarding) rather than the person registering themselves.
+  manualOnboarding: boolean("manual_onboarding").notNull().default(false),
+  manualOnboardedBy: uuid("manual_onboarded_by").references((): AnyPgColumn => users.id, { onDelete: "set null" }),
+  manualOnboardedAt: timestamp("manual_onboarded_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
 });
@@ -437,6 +444,7 @@ export const creatorProfiles = pgTable(
     username: text("username").notNull().unique(),
     displayName: text("display_name").notNull(),
     city: text("city"),
+    province: text("province"),
     bio: text("bio"),
     // Self-reported, not auto-generated from other fields — a creator-owned professional
     // headline reads as more credible than something we synthesized for them. Public profile
@@ -568,6 +576,10 @@ export const brandProfiles = pgTable(
     website: text("website"),
     contactEmail: text("contact_email"),
     contactVisible: boolean("contact_visible").notNull().default(false),
+    // PIC (person-in-charge) contact captured during Manual Brand Onboarding — distinct from
+    // contactEmail above, which is the public-facing collaboration inbox shown on the profile.
+    picName: text("pic_name"),
+    picPhone: text("pic_phone"),
     verificationStatus: text("verification_status").notNull().default("unverified"),
     featured: boolean("featured").notNull().default(false),
     status: text("status").notNull().default("active"),
@@ -868,4 +880,154 @@ export const campaignsRelations = relations(campaigns, ({ one, many }) => ({
 export const campaignApplicationsRelations = relations(campaignApplications, ({ one }) => ({
   campaign: one(campaigns, { fields: [campaignApplications.campaignId], references: [campaigns.id] }),
   creator: one(creatorProfiles, { fields: [campaignApplications.creatorProfileId], references: [creatorProfiles.id] }),
+}));
+
+// ============================================================================
+// Outreach CRM — temporary internal tool for the outreach_admin role (Annisa/Naila) to track
+// manual outreach and onboarding before a KOL/Brand becomes a self-service account. Deliberately
+// separate from `creator_profiles`/`brand_profiles` (per spec: "prefer new tables instead of
+// abusing creator_profiles") since most rows here never convert into a real account.
+// ============================================================================
+
+export const kolOutreach = pgTable(
+  "kol_outreach",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    picUserId: uuid("pic_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    kolName: text("kol_name").notNull(),
+    email: text("email"),
+    phone: text("phone"),
+    instagramUrl: text("instagram_url"),
+    instagramFollowers: integer("instagram_followers"),
+    tiktokUrl: text("tiktok_url"),
+    tiktokFollowers: integer("tiktok_followers"),
+    primaryNicheId: uuid("primary_niche_id").references(() => niches.id, { onDelete: "set null" }),
+    city: text("city"),
+    // instagram | tiktok | threads | referral | community | other
+    source: text("source").notNull().default("other"),
+    // new | contacted | no_reply | replied | follow_up_1 | follow_up_2 | interested | accepted |
+    // rejected | profile_completed | converted
+    status: text("status").notNull().default("new"),
+    notes: text("notes"),
+    lastFollowUpAt: timestamp("last_follow_up_at", { withTimezone: true }),
+    statusChangedAt: timestamp("status_changed_at", { withTimezone: true }),
+    convertedCreatorProfileId: uuid("converted_creator_profile_id").references(() => creatorProfiles.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    picIdx: index("kol_outreach_pic_idx").on(table.picUserId),
+    statusIdx: index("kol_outreach_status_idx").on(table.status),
+    createdAtIdx: index("kol_outreach_created_at_idx").on(table.createdAt),
+  })
+);
+
+export const kolOutreachEvents = pgTable(
+  "kol_outreach_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    kolOutreachId: uuid("kol_outreach_id")
+      .notNull()
+      .references(() => kolOutreach.id, { onDelete: "cascade" }),
+    // created | status_changed | follow_up | note
+    eventType: text("event_type").notNull(),
+    fromStatus: text("from_status"),
+    toStatus: text("to_status"),
+    note: text("note"),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    outreachIdx: index("kol_outreach_events_outreach_idx").on(table.kolOutreachId),
+  })
+);
+
+export const brandOutreach = pgTable(
+  "brand_outreach",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    picUserId: uuid("pic_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "restrict" }),
+    brandName: text("brand_name").notNull(),
+    industry: text("industry"),
+    email: text("email"),
+    phone: text("phone"),
+    instagramUrl: text("instagram_url"),
+    instagramFollowers: integer("instagram_followers"),
+    tiktokUrl: text("tiktok_url"),
+    tiktokFollowers: integer("tiktok_followers"),
+    website: text("website"),
+    // instagram | tiktok | threads | referral | community | other
+    source: text("source").notNull().default("other"),
+    // new | contacted | no_reply | replied | follow_up_1 | follow_up_2 | interested | accepted |
+    // rejected | campaign_requested | converted
+    status: text("status").notNull().default("new"),
+    notes: text("notes"),
+    lastFollowUpAt: timestamp("last_follow_up_at", { withTimezone: true }),
+    statusChangedAt: timestamp("status_changed_at", { withTimezone: true }),
+    convertedBrandProfileId: uuid("converted_brand_profile_id").references(() => brandProfiles.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    picIdx: index("brand_outreach_pic_idx").on(table.picUserId),
+    statusIdx: index("brand_outreach_status_idx").on(table.status),
+    createdAtIdx: index("brand_outreach_created_at_idx").on(table.createdAt),
+  })
+);
+
+export const brandOutreachEvents = pgTable(
+  "brand_outreach_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    brandOutreachId: uuid("brand_outreach_id")
+      .notNull()
+      .references(() => brandOutreach.id, { onDelete: "cascade" }),
+    // created | status_changed | follow_up | note
+    eventType: text("event_type").notNull(),
+    fromStatus: text("from_status"),
+    toStatus: text("to_status"),
+    note: text("note"),
+    createdByUserId: uuid("created_by_user_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    outreachIdx: index("brand_outreach_events_outreach_idx").on(table.brandOutreachId),
+  })
+);
+
+export const kolOutreachRelations = relations(kolOutreach, ({ one, many }) => ({
+  pic: one(users, { fields: [kolOutreach.picUserId], references: [users.id] }),
+  primaryNiche: one(niches, { fields: [kolOutreach.primaryNicheId], references: [niches.id] }),
+  convertedCreatorProfile: one(creatorProfiles, {
+    fields: [kolOutreach.convertedCreatorProfileId],
+    references: [creatorProfiles.id],
+  }),
+  events: many(kolOutreachEvents),
+}));
+
+export const kolOutreachEventsRelations = relations(kolOutreachEvents, ({ one }) => ({
+  outreach: one(kolOutreach, { fields: [kolOutreachEvents.kolOutreachId], references: [kolOutreach.id] }),
+  createdBy: one(users, { fields: [kolOutreachEvents.createdByUserId], references: [users.id] }),
+}));
+
+export const brandOutreachRelations = relations(brandOutreach, ({ one, many }) => ({
+  pic: one(users, { fields: [brandOutreach.picUserId], references: [users.id] }),
+  convertedBrandProfile: one(brandProfiles, {
+    fields: [brandOutreach.convertedBrandProfileId],
+    references: [brandProfiles.id],
+  }),
+  events: many(brandOutreachEvents),
+}));
+
+export const brandOutreachEventsRelations = relations(brandOutreachEvents, ({ one }) => ({
+  outreach: one(brandOutreach, { fields: [brandOutreachEvents.brandOutreachId], references: [brandOutreach.id] }),
+  createdBy: one(users, { fields: [brandOutreachEvents.createdByUserId], references: [users.id] }),
 }));

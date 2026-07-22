@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { OcButton } from "@/components/oc/primitives";
+import { GoogleSignInButton } from "@/components/oc/GoogleSignInButton";
 
 export default function RegisterBrandPage() {
   const router = useRouter();
@@ -90,6 +91,8 @@ export default function RegisterBrandPage() {
             {isSubmitting ? "Creating account..." : "Create Brand Account"}
           </OcButton>
         </form>
+
+        <GoogleSignInButton role="brand" />
       </div>
     </div>
   );

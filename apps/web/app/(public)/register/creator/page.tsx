@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { OcButton } from "@/components/oc/primitives";
+import { GoogleSignInButton } from "@/components/oc/GoogleSignInButton";
 
 export default function RegisterCreatorPage() {
   const router = useRouter();
@@ -97,6 +98,8 @@ export default function RegisterCreatorPage() {
             {isSubmitting ? "Creating account..." : "Create KOL Account"}
           </OcButton>
         </form>
+
+        <GoogleSignInButton role="creator" />
       </div>
     </div>
   );

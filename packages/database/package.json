@@ -12,6 +12,7 @@
     "migrate": "tsx src/migrate.ts",
     "seed": "tsx src/seed.ts",
     "seed:opencollab": "tsx src/seedOpenCollab.ts",
+    "seed:outreach": "tsx src/seedOutreachAdmins.ts",
     "import:nano-kols": "tsx src/importNanoKols.ts",
     "import:kol-visits": "tsx src/importKolVisits.ts"
   },

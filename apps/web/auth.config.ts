@@ -43,8 +43,16 @@ export const authConfig = {
       const role = auth?.user?.role;
       const { pathname } = request.nextUrl;
 
+      // outreach_admin (Annisa/Naila) is a restricted admin role: it may only reach the Outreach
+      // CRM subtree (see PRD "Outreach Operations Dashboard") — everything else under /admin,
+      // including all other /api/admin/* routes, stays admin-only. The individual outreach API
+      // route handlers still re-check requireRole(["admin", "outreach_admin"]) themselves
+      // (defense-in-depth, same pattern as every other /api/admin/* route).
+      const isOutreachPath = pathname.startsWith("/admin/outreach") || pathname.startsWith("/api/admin/outreach");
       if (pathname.startsWith("/admin") || ADMIN_ONLY_API_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
-        return role === "admin";
+        if (role === "admin") return true;
+        if (role === "outreach_admin") return isOutreachPath;
+        return false;
       }
       if (pathname.startsWith("/dashboard/creator") || pathname.startsWith("/api/creator")) {
         return role === "creator" || role === "admin";

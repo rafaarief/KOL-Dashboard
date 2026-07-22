@@ -20,6 +20,16 @@ const NAV_GROUPS = [
     ],
   },
   {
+    label: "Outreach",
+    items: [
+      { href: "/admin/outreach", label: "Dashboard", exact: true },
+      { href: "/admin/outreach/kols", label: "KOL Outreach" },
+      { href: "/admin/outreach/brands", label: "Brand Outreach" },
+      { href: "/admin/outreach/onboard-kol", label: "Manual KOL Onboarding" },
+      { href: "/admin/outreach/onboard-brand", label: "Manual Brand Onboarding" },
+    ],
+  },
+  {
     label: "Growth & Operations",
     items: [
       { href: "/admin/kol-finder", label: "KOL Finder", exact: true },
@@ -47,13 +57,17 @@ function isActive(pathname: string | null, href: string, exact?: boolean) {
   return exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function AdminSidebar() {
+export function AdminSidebar({ role = "admin" }: { role?: string }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
 
+  // outreach_admin (Annisa/Naila) sees only the Outreach CRM — "Nothing else" per the PRD. The
+  // full admin role keeps every group, including Outreach, since it retains full access.
+  const navGroups = role === "outreach_admin" ? NAV_GROUPS.filter((group) => group.label === "Outreach") : NAV_GROUPS;
+
   const nav = (
     <nav className="space-y-6">
-      {NAV_GROUPS.map((group) => (
+      {navGroups.map((group) => (
         <div key={group.label}>
           <p className="px-3 text-xs font-semibold uppercase tracking-wide text-oc-ink-muted">{group.label}</p>
           <div className="mt-1 space-y-0.5">

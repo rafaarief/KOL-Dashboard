@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getSession, signIn } from "next-auth/react";
 import { OcButton } from "@/components/oc/primitives";
+import { GoogleSignInButton } from "@/components/oc/GoogleSignInButton";
 
 const ROLE_HOME: Record<string, string> = {
   admin: "/admin",
@@ -82,6 +83,8 @@ function LoginForm() {
           {isSubmitting ? "Logging in..." : "Log In"}
         </OcButton>
       </form>
+
+      <GoogleSignInButton />
 
       <p className="mt-6 text-center text-sm text-oc-ink-muted">
         Don&apos;t have an account?{" "}
