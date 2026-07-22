@@ -1,28 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OcButton, OcCard } from "@/components/oc/primitives";
 import { OUTREACH_SOURCE_LABELS, OUTREACH_SOURCES } from "@/lib/outreachEnums";
 import type { DuplicateMatch } from "@/lib/outreachDuplicateCheck";
 
+interface Niche {
+  id: string;
+  name: string;
+}
+
 export default function NewKolOutreachPage() {
   const router = useRouter();
+  const [niches, setNiches] = useState<Niche[]>([]);
   const [form, setForm] = useState({
     kolName: "",
-    email: "",
-    phone: "",
     instagramUrl: "",
     instagramFollowers: "",
     tiktokUrl: "",
     tiktokFollowers: "",
     city: "",
+    primaryNicheId: "",
     source: "other",
     notes: "",
   });
   const [duplicates, setDuplicates] = useState<DuplicateMatch[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/outreach/niches")
+      .then((res) => (res.ok ? res.json() : { niches: [] }))
+      .then((body) => setNiches(body.niches ?? []));
+  }, []);
 
   async function submit(confirmDuplicate: boolean) {
     setIsSubmitting(true);
@@ -33,6 +44,7 @@ export default function NewKolOutreachPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         ...form,
+        primaryNicheId: form.primaryNicheId || undefined,
         instagramFollowers: form.instagramFollowers ? Number(form.instagramFollowers) : undefined,
         tiktokFollowers: form.tiktokFollowers ? Number(form.tiktokFollowers) : undefined,
         confirmDuplicate,
@@ -69,28 +81,11 @@ export default function NewKolOutreachPage() {
           className="grid grid-cols-1 gap-4 sm:grid-cols-2"
         >
           <label className="text-xs text-oc-ink-muted sm:col-span-2">
-            KOL name
+            Name
             <input
               required
               value={form.kolName}
               onChange={(e) => setForm((f) => ({ ...f, kolName: e.target.value }))}
-              className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm text-oc-ink"
-            />
-          </label>
-          <label className="text-xs text-oc-ink-muted">
-            Email
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm text-oc-ink"
-            />
-          </label>
-          <label className="text-xs text-oc-ink-muted">
-            Phone
-            <input
-              value={form.phone}
-              onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm text-oc-ink"
             />
           </label>
@@ -137,6 +132,21 @@ export default function NewKolOutreachPage() {
               onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
               className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm text-oc-ink"
             />
+          </label>
+          <label className="text-xs text-oc-ink-muted">
+            Niche
+            <select
+              value={form.primaryNicheId}
+              onChange={(e) => setForm((f) => ({ ...f, primaryNicheId: e.target.value }))}
+              className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm text-oc-ink"
+            >
+              <option value="">Select niche</option>
+              {niches.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.name}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="text-xs text-oc-ink-muted">
             Source
