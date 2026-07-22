@@ -1,23 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { OcButton, OcCard } from "@/components/oc/primitives";
 import { OUTREACH_SOURCE_LABELS, OUTREACH_SOURCES } from "@/lib/outreachEnums";
 import type { DuplicateMatch } from "@/lib/outreachDuplicateCheck";
 
+interface Category {
+  id: string;
+  name: string;
+}
+
 export default function NewBrandOutreachPage() {
   const router = useRouter();
+  const [categories, setCategories] = useState<Category[]>([]);
   const [form, setForm] = useState({
     brandName: "",
     industry: "",
-    email: "",
     phone: "",
-    instagramUrl: "",
-    instagramFollowers: "",
-    tiktokUrl: "",
-    tiktokFollowers: "",
-    website: "",
+    socialUrl: "",
     source: "other",
     notes: "",
   });
@@ -25,17 +26,29 @@ export default function NewBrandOutreachPage() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  useEffect(() => {
+    fetch("/api/admin/outreach/categories")
+      .then((res) => (res.ok ? res.json() : { categories: [] }))
+      .then((body) => setCategories(body.categories ?? []));
+  }, []);
+
   async function submit(confirmDuplicate: boolean) {
     setIsSubmitting(true);
     setError(null);
+
+    const isTikTok = form.socialUrl.toLowerCase().includes("tiktok");
 
     const response = await fetch("/api/admin/outreach/brands", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        ...form,
-        instagramFollowers: form.instagramFollowers ? Number(form.instagramFollowers) : undefined,
-        tiktokFollowers: form.tiktokFollowers ? Number(form.tiktokFollowers) : undefined,
+        brandName: form.brandName,
+        industry: form.industry,
+        phone: form.phone,
+        instagramUrl: form.socialUrl && !isTikTok ? form.socialUrl : undefined,
+        tiktokUrl: form.socialUrl && isTikTok ? form.socialUrl : undefined,
+        source: form.source,
+        notes: form.notes,
         confirmDuplicate,
       }),
     });
@@ -79,71 +92,33 @@ export default function NewBrandOutreachPage() {
             />
           </label>
           <label className="text-xs text-oc-ink-muted">
-            Industry
-            <input
+            Category
+            <select
               value={form.industry}
               onChange={(e) => setForm((f) => ({ ...f, industry: e.target.value }))}
               className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm text-oc-ink"
-            />
+            >
+              <option value="">Select category</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="text-xs text-oc-ink-muted">
-            Website
-            <input
-              value={form.website}
-              onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
-              className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm text-oc-ink"
-            />
-          </label>
-          <label className="text-xs text-oc-ink-muted">
-            Email
-            <input
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
-              className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm text-oc-ink"
-            />
-          </label>
-          <label className="text-xs text-oc-ink-muted">
-            Phone
+            WA phone
             <input
               value={form.phone}
               onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
               className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm text-oc-ink"
             />
           </label>
-          <label className="text-xs text-oc-ink-muted">
-            Instagram URL
+          <label className="text-xs text-oc-ink-muted sm:col-span-2">
+            IG/TikTok URL
             <input
-              value={form.instagramUrl}
-              onChange={(e) => setForm((f) => ({ ...f, instagramUrl: e.target.value }))}
-              className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm text-oc-ink"
-            />
-          </label>
-          <label className="text-xs text-oc-ink-muted">
-            Instagram followers
-            <input
-              type="number"
-              min={0}
-              value={form.instagramFollowers}
-              onChange={(e) => setForm((f) => ({ ...f, instagramFollowers: e.target.value }))}
-              className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm text-oc-ink"
-            />
-          </label>
-          <label className="text-xs text-oc-ink-muted">
-            TikTok URL
-            <input
-              value={form.tiktokUrl}
-              onChange={(e) => setForm((f) => ({ ...f, tiktokUrl: e.target.value }))}
-              className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm text-oc-ink"
-            />
-          </label>
-          <label className="text-xs text-oc-ink-muted">
-            TikTok followers
-            <input
-              type="number"
-              min={0}
-              value={form.tiktokFollowers}
-              onChange={(e) => setForm((f) => ({ ...f, tiktokFollowers: e.target.value }))}
+              value={form.socialUrl}
+              onChange={(e) => setForm((f) => ({ ...f, socialUrl: e.target.value }))}
               className="mt-1 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm text-oc-ink"
             />
           </label>
