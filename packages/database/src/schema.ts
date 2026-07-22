@@ -18,22 +18,29 @@ import {
  * internal KOL Finder automation (see getDefaultUserId()) keep working untouched. OpenCollab
  * app code should only ever write "creator" | "brand" | "admin" | "outreach_admin" | "specialist"
  * here. */
-export const users = pgTable("users", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  email: text("email").notNull().unique(),
-  fullName: text("full_name"),
-  role: text("role").notNull().default("specialist"),
-  passwordHash: text("password_hash"),
-  // active | suspended — enforced at login in auth.ts, not just hidden in the UI.
-  status: text("status").notNull().default("active"),
-  // Set when an outreach_admin creates this account on the KOL's/Brand's behalf (Outreach CRM
-  // manual onboarding) rather than the person registering themselves.
-  manualOnboarding: boolean("manual_onboarding").notNull().default(false),
-  manualOnboardedBy: uuid("manual_onboarded_by").references((): AnyPgColumn => users.id, { onDelete: "set null" }),
-  manualOnboardedAt: timestamp("manual_onboarded_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    email: text("email").notNull().unique(),
+    fullName: text("full_name"),
+    role: text("role").notNull().default("specialist"),
+    passwordHash: text("password_hash"),
+    // active | suspended — enforced at login in auth.ts, not just hidden in the UI.
+    status: text("status").notNull().default("active"),
+    // Set when an outreach_admin creates this account on the KOL's/Brand's behalf (Outreach CRM
+    // manual onboarding) rather than the person registering themselves.
+    manualOnboarding: boolean("manual_onboarding").notNull().default(false),
+    manualOnboardedBy: uuid("manual_onboarded_by").references((): AnyPgColumn => users.id, { onDelete: "set null" }),
+    manualOnboardedAt: timestamp("manual_onboarded_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  },
+  (table) => ({
+    roleIdx: index("users_role_idx").on(table.role),
+    statusIdx: index("users_status_idx").on(table.status),
+  })
+);
 
 /** Auth.js (NextAuth v5) Drizzle adapter tables — only Credentials/JWT auth is wired up today,
  * but these keep the schema ready for OAuth providers later without another migration. */
@@ -98,17 +105,23 @@ export const searches = pgTable("searches", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const searchKeywords = pgTable("search_keywords", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  searchId: uuid("search_id")
-    .notNull()
-    .references(() => searches.id, { onDelete: "cascade" }),
-  keyword: text("keyword").notNull(),
-  keywordType: text("keyword_type").notNull().default("direct"), // direct | semantic | discovery
-  processingStatus: text("processing_status").notNull().default("pending"),
-  resultCount: integer("result_count").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const searchKeywords = pgTable(
+  "search_keywords",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    searchId: uuid("search_id")
+      .notNull()
+      .references(() => searches.id, { onDelete: "cascade" }),
+    keyword: text("keyword").notNull(),
+    keywordType: text("keyword_type").notNull().default("direct"), // direct | semantic | discovery
+    processingStatus: text("processing_status").notNull().default("pending"),
+    resultCount: integer("result_count").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    searchIdx: index("search_keywords_search_id_idx").on(table.searchId),
+  })
+);
 
 export const creators = pgTable(
   "creators",
@@ -170,43 +183,60 @@ export const videos = pgTable("videos", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const searchResults = pgTable("search_results", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  searchId: uuid("search_id")
-    .notNull()
-    .references(() => searches.id, { onDelete: "cascade" }),
-  creatorId: uuid("creator_id")
-    .notNull()
-    .references(() => creators.id, { onDelete: "cascade" }),
-  primaryVideoId: uuid("primary_video_id").references(() => videos.id),
-  discoveryKeywords: jsonb("discovery_keywords").notNull().default([]),
-  freshnessScore: numeric("freshness_score", { precision: 5, scale: 2 }).notNull(),
-  relevantVideoScore: numeric("relevant_video_score", { precision: 5, scale: 2 }).notNull(),
-  recentPerformanceScore: numeric("recent_performance_score", { precision: 5, scale: 2 }).notNull(),
-  viewPerformanceScore: numeric("view_performance_score", { precision: 5, scale: 2 }).notNull(),
-  keywordRelevanceScore: numeric("keyword_relevance_score", { precision: 5, scale: 2 }).notNull(),
-  finalScore: numeric("final_score", { precision: 5, scale: 2 }).notNull(),
-  rankingLabel: text("ranking_label").notNull(),
-  rankingExplanation: text("ranking_explanation").notNull(),
-  rankPosition: integer("rank_position").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const searchResults = pgTable(
+  "search_results",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    searchId: uuid("search_id")
+      .notNull()
+      .references(() => searches.id, { onDelete: "cascade" }),
+    creatorId: uuid("creator_id")
+      .notNull()
+      .references(() => creators.id, { onDelete: "cascade" }),
+    primaryVideoId: uuid("primary_video_id").references(() => videos.id),
+    discoveryKeywords: jsonb("discovery_keywords").notNull().default([]),
+    freshnessScore: numeric("freshness_score", { precision: 5, scale: 2 }).notNull(),
+    relevantVideoScore: numeric("relevant_video_score", { precision: 5, scale: 2 }).notNull(),
+    recentPerformanceScore: numeric("recent_performance_score", { precision: 5, scale: 2 }).notNull(),
+    viewPerformanceScore: numeric("view_performance_score", { precision: 5, scale: 2 }).notNull(),
+    keywordRelevanceScore: numeric("keyword_relevance_score", { precision: 5, scale: 2 }).notNull(),
+    finalScore: numeric("final_score", { precision: 5, scale: 2 }).notNull(),
+    rankingLabel: text("ranking_label").notNull(),
+    rankingExplanation: text("ranking_explanation").notNull(),
+    rankPosition: integer("rank_position").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    searchIdx: index("search_results_search_id_idx").on(table.searchId),
+    // A stalled BullMQ job can be redelivered to a second worker after a crash/restart even with
+    // attempts:1 (that only bounds failure retries, not stalled-job redelivery) — this stops two
+    // concurrent runs of the same search from inserting overlapping/duplicate result rows for
+    // the same creator.
+    uniqueSearchCreator: uniqueIndex("search_results_search_id_creator_id_unique").on(table.searchId, table.creatorId),
+  })
+);
 
-export const creatorMetricSnapshots = pgTable("creator_metric_snapshots", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  creatorId: uuid("creator_id")
-    .notNull()
-    .references(() => creators.id, { onDelete: "cascade" }),
-  followerCount: bigint("follower_count", { mode: "number" }),
-  totalLikeCount: bigint("total_like_count", { mode: "number" }),
-  recentAverageViews: bigint("recent_average_views", { mode: "number" }),
-  recentMedianViews: bigint("recent_median_views", { mode: "number" }),
-  recentMaxViews: bigint("recent_max_views", { mode: "number" }),
-  recentMinViews: bigint("recent_min_views", { mode: "number" }),
-  recentOver10kCount: integer("recent_over_10k_count").notNull().default(0),
-  lastUploadAt: timestamp("last_upload_at", { withTimezone: true }),
-  collectedAt: timestamp("collected_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const creatorMetricSnapshots = pgTable(
+  "creator_metric_snapshots",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    creatorId: uuid("creator_id")
+      .notNull()
+      .references(() => creators.id, { onDelete: "cascade" }),
+    followerCount: bigint("follower_count", { mode: "number" }),
+    totalLikeCount: bigint("total_like_count", { mode: "number" }),
+    recentAverageViews: bigint("recent_average_views", { mode: "number" }),
+    recentMedianViews: bigint("recent_median_views", { mode: "number" }),
+    recentMaxViews: bigint("recent_max_views", { mode: "number" }),
+    recentMinViews: bigint("recent_min_views", { mode: "number" }),
+    recentOver10kCount: integer("recent_over_10k_count").notNull().default(0),
+    lastUploadAt: timestamp("last_upload_at", { withTimezone: true }),
+    collectedAt: timestamp("collected_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    creatorIdx: index("creator_metric_snapshots_creator_id_idx").on(table.creatorId),
+  })
+);
 
 export const shortlists = pgTable("shortlists", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -221,40 +251,52 @@ export const shortlists = pgTable("shortlists", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const shortlistCreators = pgTable("shortlist_creators", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  shortlistId: uuid("shortlist_id")
-    .notNull()
-    .references(() => shortlists.id, { onDelete: "cascade" }),
-  creatorId: uuid("creator_id")
-    .notNull()
-    .references(() => creators.id, { onDelete: "cascade" }),
-  searchResultId: uuid("search_result_id").references(() => searchResults.id),
-  status: text("status").notNull().default("Discovered"),
-  internalNotes: text("internal_notes"),
-  proposedDeliverable: text("proposed_deliverable"),
-  proposedPrice: numeric("proposed_price", { precision: 12, scale: 2 }),
-  finalPrice: numeric("final_price", { precision: 12, scale: 2 }),
-  addedBy: uuid("added_by")
-    .notNull()
-    .references(() => users.id),
-  addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const shortlistCreators = pgTable(
+  "shortlist_creators",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    shortlistId: uuid("shortlist_id")
+      .notNull()
+      .references(() => shortlists.id, { onDelete: "cascade" }),
+    creatorId: uuid("creator_id")
+      .notNull()
+      .references(() => creators.id, { onDelete: "cascade" }),
+    searchResultId: uuid("search_result_id").references(() => searchResults.id),
+    status: text("status").notNull().default("Discovered"),
+    internalNotes: text("internal_notes"),
+    proposedDeliverable: text("proposed_deliverable"),
+    proposedPrice: numeric("proposed_price", { precision: 12, scale: 2 }),
+    finalPrice: numeric("final_price", { precision: 12, scale: 2 }),
+    addedBy: uuid("added_by")
+      .notNull()
+      .references(() => users.id),
+    addedAt: timestamp("added_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    shortlistIdx: index("shortlist_creators_shortlist_id_idx").on(table.shortlistId),
+  })
+);
 
-export const scrapingEvents = pgTable("scraping_events", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  searchId: uuid("search_id").references(() => searches.id, { onDelete: "cascade" }),
-  creatorId: uuid("creator_id").references(() => creators.id, { onDelete: "set null" }),
-  jobId: text("job_id").notNull(),
-  eventType: text("event_type").notNull(),
-  status: text("status").notNull(),
-  attempt: integer("attempt").notNull().default(1),
-  errorCode: text("error_code"),
-  errorMessage: text("error_message"),
-  metadata: jsonb("metadata").notNull().default({}),
-  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
-});
+export const scrapingEvents = pgTable(
+  "scraping_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    searchId: uuid("search_id").references(() => searches.id, { onDelete: "cascade" }),
+    creatorId: uuid("creator_id").references(() => creators.id, { onDelete: "set null" }),
+    jobId: text("job_id").notNull(),
+    eventType: text("event_type").notNull(),
+    status: text("status").notNull(),
+    attempt: integer("attempt").notNull().default(1),
+    errorCode: text("error_code"),
+    errorMessage: text("error_message"),
+    metadata: jsonb("metadata").notNull().default({}),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    searchIdx: index("scraping_events_search_id_idx").on(table.searchId),
+  })
+);
 
 // --- Nano KOL directory: curated roster (e.g. Blok M nano creators), imported from spreadsheets
 // rather than scraped. Distinct from `creators` (search-pipeline scraped data). ---
@@ -372,6 +414,9 @@ export const businesses = pgTable(
     categoryIdx: index("businesses_category_id_idx").on(table.categoryId),
     cityIdx: index("businesses_city_idx").on(table.city),
     provinceIdx: index("businesses_province_idx").on(table.province),
+    crmStatusIdx: index("businesses_crm_status_idx").on(table.crmStatus),
+    ratingIdx: index("businesses_rating_idx").on(table.rating),
+    leadScoreIdx: index("businesses_lead_score_idx").on(table.leadScore),
   })
 );
 
@@ -479,6 +524,9 @@ export const creatorProfiles = pgTable(
     availabilityIdx: index("creator_profiles_availability_idx").on(table.availabilityStatus),
     nicheIdx: index("creator_profiles_niche_idx").on(table.primaryNicheId),
     statusIdx: index("creator_profiles_status_idx").on(table.status),
+    verificationStatusIdx: index("creator_profiles_verification_status_idx").on(table.verificationStatus),
+    cityIdx: index("creator_profiles_city_idx").on(table.city),
+    minimumBudgetIdx: index("creator_profiles_minimum_budget_idx").on(table.minimumBudget),
   })
 );
 
@@ -589,6 +637,8 @@ export const brandProfiles = pgTable(
   (table) => ({
     industryIdx: index("brand_profiles_industry_idx").on(table.industry),
     statusIdx: index("brand_profiles_status_idx").on(table.status),
+    verificationStatusIdx: index("brand_profiles_verification_status_idx").on(table.verificationStatus),
+    cityIdx: index("brand_profiles_city_idx").on(table.city),
   })
 );
 
@@ -653,6 +703,10 @@ export const campaigns = pgTable(
     statusIdx: index("campaigns_status_idx").on(table.status),
     brandIdx: index("campaigns_brand_idx").on(table.brandProfileId),
     categoryIdx: index("campaigns_category_idx").on(table.categoryId),
+    cityIdx: index("campaigns_city_idx").on(table.city),
+    applicationDeadlineIdx: index("campaigns_application_deadline_idx").on(table.applicationDeadline),
+    // Covers the marketplace's default sort (featured first, then most recently published).
+    featuredPublishedIdx: index("campaigns_featured_published_idx").on(table.featured, table.publishedAt),
   })
 );
 
@@ -775,31 +829,46 @@ export const savedCreators = pgTable(
   })
 );
 
-export const verificationRequests = pgTable("verification_requests", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  subjectType: text("subject_type").notNull(), // creator | brand
-  subjectId: uuid("subject_id").notNull(),
-  // not_requested | pending | needs_information | approved | rejected | revoked
-  status: text("status").notNull().default("pending"),
-  reviewerNote: text("reviewer_note"),
-  reviewerId: uuid("reviewer_id").references(() => users.id, { onDelete: "set null" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
-});
+export const verificationRequests = pgTable(
+  "verification_requests",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    subjectType: text("subject_type").notNull(), // creator | brand
+    subjectId: uuid("subject_id").notNull(),
+    // not_requested | pending | needs_information | approved | rejected | revoked
+    status: text("status").notNull().default("pending"),
+    reviewerNote: text("reviewer_note"),
+    reviewerId: uuid("reviewer_id").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  },
+  (table) => ({
+    statusIdx: index("verification_requests_status_idx").on(table.status),
+    createdAtIdx: index("verification_requests_created_at_idx").on(table.createdAt),
+  })
+);
 
-export const reports = pgTable("reports", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  reporterUserId: uuid("reporter_user_id").references(() => users.id, { onDelete: "set null" }),
-  targetType: text("target_type").notNull(),
-  targetId: uuid("target_id").notNull(),
-  reason: text("reason").notNull(),
-  // open | under_review | resolved | dismissed
-  status: text("status").notNull().default("open"),
-  resolverId: uuid("resolver_id").references(() => users.id, { onDelete: "set null" }),
-  resolutionReason: text("resolution_reason"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
-});
+export const reports = pgTable(
+  "reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    reporterUserId: uuid("reporter_user_id").references(() => users.id, { onDelete: "set null" }),
+    targetType: text("target_type").notNull(),
+    targetId: uuid("target_id").notNull(),
+    reason: text("reason").notNull(),
+    // open | under_review | resolved | dismissed
+    status: text("status").notNull().default("open"),
+    resolverId: uuid("resolver_id").references(() => users.id, { onDelete: "set null" }),
+    resolutionReason: text("resolution_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (table) => ({
+    targetIdx: index("reports_target_type_target_id_idx").on(table.targetType, table.targetId),
+    statusIdx: index("reports_status_idx").on(table.status),
+    createdAtIdx: index("reports_created_at_idx").on(table.createdAt),
+  })
+);
 
 /** High-impact admin action trail — never stores passwords/tokens/secrets, only enough of a
  * before/after snapshot to answer "who changed what, when" during a support/dispute review. */

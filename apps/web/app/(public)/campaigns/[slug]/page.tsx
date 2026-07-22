@@ -103,29 +103,30 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
   const db = getDb();
   const session = await auth();
 
-  let socialAccounts: { id: string; platformName: string; username: string }[] = [];
-  let alreadySaved = false;
-  if (session?.user.role === "creator") {
-    const [profile] = await db.select().from(schema.creatorProfiles).where(eq(schema.creatorProfiles.userId, session.user.id)).limit(1);
-    if (profile) {
-      const accounts = await db
-        .select({ id: schema.creatorSocialAccounts.id, platformName: schema.platforms.name, username: schema.creatorSocialAccounts.username })
-        .from(schema.creatorSocialAccounts)
-        .innerJoin(schema.platforms, eq(schema.platforms.id, schema.creatorSocialAccounts.platformId))
-        .where(eq(schema.creatorSocialAccounts.creatorProfileId, profile.id));
-      socialAccounts = accounts;
+  // Creator context, brand-trust stats, and similar campaigns are fully independent of each
+  // other — batched into one Promise.all instead of four sequential round trips.
+  const [{ socialAccounts, alreadySaved }, brandTrustRows, similarRaw] = await Promise.all([
+    (async () => {
+      if (session?.user.role !== "creator") return { socialAccounts: [], alreadySaved: false };
+      const [profile] = await db.select().from(schema.creatorProfiles).where(eq(schema.creatorProfiles.userId, session.user.id)).limit(1);
+      if (!profile) return { socialAccounts: [], alreadySaved: false };
 
-      const [saved] = await db
-        .select()
-        .from(schema.savedCampaigns)
-        .where(and(eq(schema.savedCampaigns.userId, session.user.id), eq(schema.savedCampaigns.campaignId, campaign.id)))
-        .limit(1);
-      alreadySaved = Boolean(saved);
-    }
-  }
-
-  const [brandTrust] = (await db.execute(
-    sql`select
+      const [accounts, [saved]] = await Promise.all([
+        db
+          .select({ id: schema.creatorSocialAccounts.id, platformName: schema.platforms.name, username: schema.creatorSocialAccounts.username })
+          .from(schema.creatorSocialAccounts)
+          .innerJoin(schema.platforms, eq(schema.platforms.id, schema.creatorSocialAccounts.platformId))
+          .where(eq(schema.creatorSocialAccounts.creatorProfileId, profile.id)),
+        db
+          .select()
+          .from(schema.savedCampaigns)
+          .where(and(eq(schema.savedCampaigns.userId, session.user.id), eq(schema.savedCampaigns.campaignId, campaign.id)))
+          .limit(1),
+      ]);
+      return { socialAccounts: accounts, alreadySaved: Boolean(saved) };
+    })(),
+    db.execute(
+      sql`select
           count(distinct c.id) filter (where c.status in ('published','filled','closed'))::int as "campaignsPosted",
           count(distinct ca.creator_profile_id) filter (where ca.status = 'accepted')::int as "creatorsHired",
           count(ca.id)::int as "totalApplications",
@@ -133,12 +134,10 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
         from campaigns c
         left join campaign_applications ca on ca.campaign_id = c.id
         where c.brand_profile_id = ${campaign.brandProfileId}`
-  )) as unknown as { campaignsPosted: number; creatorsHired: number; totalApplications: number; reviewedApplications: number }[];
-  const brandReviewRate = brandTrust?.totalApplications ? Math.round((brandTrust.reviewedApplications / brandTrust.totalApplications) * 100) : null;
-
-  const similarRaw = campaign.categoryId
-    ? await db
-        .select({
+    ),
+    campaign.categoryId
+      ? db
+          .select({
           slug: schema.campaigns.slug,
           title: schema.campaigns.title,
           shortDescription: schema.campaigns.shortDescription,
@@ -162,13 +161,17 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
           featured: schema.campaigns.featured,
           applicantCount: sql<number>`(select count(*) from campaign_applications ca where ca.campaign_id = campaigns.id)`,
         })
-        .from(schema.campaigns)
-        .innerJoin(schema.brandProfiles, eq(schema.brandProfiles.id, schema.campaigns.brandProfileId))
-        .leftJoin(schema.marketplaceCategories, eq(schema.marketplaceCategories.id, schema.campaigns.categoryId))
-        .where(and(eq(schema.campaigns.categoryId, campaign.categoryId), eq(schema.campaigns.status, "published"), ne(schema.campaigns.id, campaign.id)))
-        .orderBy(desc(schema.campaigns.publishedAt))
-        .limit(3)
-    : [];
+          .from(schema.campaigns)
+          .innerJoin(schema.brandProfiles, eq(schema.brandProfiles.id, schema.campaigns.brandProfileId))
+          .leftJoin(schema.marketplaceCategories, eq(schema.marketplaceCategories.id, schema.campaigns.categoryId))
+          .where(and(eq(schema.campaigns.categoryId, campaign.categoryId), eq(schema.campaigns.status, "published"), ne(schema.campaigns.id, campaign.id)))
+          .orderBy(desc(schema.campaigns.publishedAt))
+          .limit(3)
+      : [],
+  ]);
+
+  const [brandTrust] = brandTrustRows as unknown as { campaignsPosted: number; creatorsHired: number; totalApplications: number; reviewedApplications: number }[];
+  const brandReviewRate = brandTrust?.totalApplications ? Math.round((brandTrust.reviewedApplications / brandTrust.totalApplications) * 100) : null;
 
   const visual = campaignVisualFor(campaign.categoryName);
   const VisualIcon = visual.icon;

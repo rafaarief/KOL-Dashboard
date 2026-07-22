@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, ilike, lte, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { KOL_SEGMENT_THRESHOLDS, igFollowersSql, kolSegmentDriverSql, kolSegmentFromCount, tiktokFollowersSql, type KolSegment } from "@/lib/kolSegment";
 import { BUDGET_TYPE_BARTER, FEE_TYPE_BARTER, FEE_TYPE_PAID } from "@/lib/marketplaceEnums";
@@ -45,9 +45,11 @@ export async function listPublishedCampaigns(params: CampaignListParams) {
     );
   }
   if (params.category) conditions.push(eq(schema.marketplaceCategories.slug, params.category));
-  if (params.city) conditions.push(eq(schema.campaigns.city, params.city));
+  if (params.city) conditions.push(ilike(schema.campaigns.city, params.city));
   if (params.budgetType === BUDGET_TYPE_BARTER) conditions.push(eq(schema.campaigns.budgetType, BUDGET_TYPE_BARTER));
-  if (params.budgetType === "money") conditions.push(ne(schema.campaigns.budgetType, BUDGET_TYPE_BARTER));
+  // "Money (paid)" means fixed/range budgets specifically — ne(barter) also let affiliate and
+  // negotiable campaigns through, which aren't a fixed paid amount either.
+  if (params.budgetType === "money") conditions.push(inArray(schema.campaigns.budgetType, ["fixed", "range"]));
   const minBudget = parseNumericFilter(params.minBudget);
   const maxBudget = parseNumericFilter(params.maxBudget);
   if (minBudget) conditions.push(gte(effectiveBudgetSql, minBudget));
@@ -150,7 +152,7 @@ export async function listActiveCreators(params: CreatorListParams) {
     );
   }
   if (params.niche) conditions.push(eq(schema.niches.slug, params.niche));
-  if (params.city) conditions.push(eq(schema.creatorProfiles.city, params.city));
+  if (params.city) conditions.push(ilike(schema.creatorProfiles.city, params.city));
   if (params.availability) conditions.push(eq(schema.creatorProfiles.availabilityStatus, params.availability));
   if (params.feeType === FEE_TYPE_BARTER) conditions.push(eq(schema.creatorProfiles.acceptsBarter, true));
   if (params.feeType === FEE_TYPE_PAID) conditions.push(sql`${schema.creatorProfiles.minimumBudget} is not null`);
@@ -236,7 +238,7 @@ export async function listActiveBrands(params: BrandListParams) {
   const conditions = [eq(schema.brandProfiles.status, "active")];
   if (params.q) conditions.push(or(ilike(schema.brandProfiles.brandName, `%${params.q}%`), ilike(schema.brandProfiles.industry, `%${params.q}%`))!);
   if (params.industry) conditions.push(eq(schema.brandProfiles.industry, params.industry));
-  if (params.city) conditions.push(eq(schema.brandProfiles.city, params.city));
+  if (params.city) conditions.push(ilike(schema.brandProfiles.city, params.city));
 
   const whereClause = and(...conditions);
 

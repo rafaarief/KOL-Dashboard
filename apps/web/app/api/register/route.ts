@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { slugify, normalizeUsername } from "@/lib/slugify";
+import { isUniqueViolation } from "@/lib/pgErrors";
 
 const registerSchema = z.object({
   email: z.string().email(),
@@ -59,29 +60,49 @@ export async function POST(request: Request) {
 
   const passwordHash = await hash(password, 10);
 
-  const [user] = await db
-    .insert(schema.users)
-    .values({ email, fullName, role, passwordHash })
-    .returning({ id: schema.users.id });
+  // Wrapped in a transaction + unique-violation catch below: the pre-checks above are only a
+  // fast path for the common case, not a real guard — two concurrent submits (double-click,
+  // retry-on-timeout) can both pass them, and the second INSERT would otherwise throw the DB's
+  // raw unique-constraint error uncaught instead of a clean EMAIL_TAKEN/USERNAME_TAKEN response.
+  try {
+    await db.transaction(async (tx) => {
+      const [user] = await tx
+        .insert(schema.users)
+        .values({ email, fullName, role, passwordHash })
+        .returning({ id: schema.users.id });
 
-  if (role === "creator") {
-    const username = normalizeUsername(parsed.data.username!);
-    await db.insert(schema.creatorProfiles).values({
-      userId: user.id,
-      username,
-      displayName: fullName,
-    });
-  } else {
-    const baseSlug = slugify(parsed.data.brandName!);
-    let slug = baseSlug || `brand-${user.id.slice(0, 8)}`;
-    const [existingSlug] = await db.select().from(schema.brandProfiles).where(eq(schema.brandProfiles.slug, slug)).limit(1);
-    if (existingSlug) slug = `${slug}-${user.id.slice(0, 6)}`;
+      if (role === "creator") {
+        const username = normalizeUsername(parsed.data.username!);
+        await tx.insert(schema.creatorProfiles).values({
+          userId: user.id,
+          username,
+          displayName: fullName,
+        });
+      } else {
+        const baseSlug = slugify(parsed.data.brandName!);
+        let slug = baseSlug || `brand-${user.id.slice(0, 8)}`;
+        const [existingSlug] = await tx.select().from(schema.brandProfiles).where(eq(schema.brandProfiles.slug, slug)).limit(1);
+        if (existingSlug) slug = `${slug}-${user.id.slice(0, 6)}`;
 
-    await db.insert(schema.brandProfiles).values({
-      userId: user.id,
-      slug,
-      brandName: parsed.data.brandName!,
+        await tx.insert(schema.brandProfiles).values({
+          userId: user.id,
+          slug,
+          brandName: parsed.data.brandName!,
+        });
+      }
     });
+  } catch (error) {
+    if (isUniqueViolation(error, "users_email_unique")) {
+      return NextResponse.json({ error: "EMAIL_TAKEN" }, { status: 409 });
+    }
+    if (isUniqueViolation(error, "creator_profiles_username_unique")) {
+      return NextResponse.json({ error: "USERNAME_TAKEN" }, { status: 409 });
+    }
+    if (isUniqueViolation(error, "brand_profiles_slug_unique")) {
+      return NextResponse.json({ error: "BRAND_NAME_TAKEN" }, { status: 409 });
+    }
+    console.error("Registration failed", error);
+    return NextResponse.json({ error: "REGISTRATION_FAILED" }, { status: 500 });
   }
 
   return NextResponse.json({ success: true }, { status: 201 });

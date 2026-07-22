@@ -37,21 +37,36 @@ export async function GET(request: Request) {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+  const BASE_COLUMNS = {
+    id: schema.campaignApplications.id,
+    status: schema.campaignApplications.status,
+    proposedRate: schema.campaignApplications.proposedRate,
+    adminNote: schema.campaignApplications.adminNote,
+    createdAt: schema.campaignApplications.createdAt,
+    updatedAt: schema.campaignApplications.updatedAt,
+    campaignId: schema.campaigns.id,
+    campaignTitle: schema.campaigns.title,
+    campaignSlug: schema.campaigns.slug,
+    brandName: schema.brandProfiles.brandName,
+    creatorUsername: schema.creatorProfiles.username,
+    creatorDisplayName: schema.creatorProfiles.displayName,
+  };
+
+  if (isCsv) {
+    const rows = await db
+      .select(BASE_COLUMNS)
+      .from(schema.campaignApplications)
+      .innerJoin(schema.campaigns, eq(schema.campaigns.id, schema.campaignApplications.campaignId))
+      .innerJoin(schema.brandProfiles, eq(schema.brandProfiles.id, schema.campaigns.brandProfileId))
+      .innerJoin(schema.creatorProfiles, eq(schema.creatorProfiles.id, schema.campaignApplications.creatorProfileId))
+      .where(whereClause)
+      .orderBy(desc(schema.campaignApplications.createdAt))
+      .limit(pageSize);
+    return csvResponse(rows, "applications.csv");
+  }
+
   const rows = await db
-    .select({
-      id: schema.campaignApplications.id,
-      status: schema.campaignApplications.status,
-      proposedRate: schema.campaignApplications.proposedRate,
-      adminNote: schema.campaignApplications.adminNote,
-      createdAt: schema.campaignApplications.createdAt,
-      updatedAt: schema.campaignApplications.updatedAt,
-      campaignId: schema.campaigns.id,
-      campaignTitle: schema.campaigns.title,
-      campaignSlug: schema.campaigns.slug,
-      brandName: schema.brandProfiles.brandName,
-      creatorUsername: schema.creatorProfiles.username,
-      creatorDisplayName: schema.creatorProfiles.displayName,
-    })
+    .select({ ...BASE_COLUMNS, __total: sql<number>`count(*) over()` })
     .from(schema.campaignApplications)
     .innerJoin(schema.campaigns, eq(schema.campaigns.id, schema.campaignApplications.campaignId))
     .innerJoin(schema.brandProfiles, eq(schema.brandProfiles.id, schema.campaigns.brandProfileId))
@@ -59,19 +74,12 @@ export async function GET(request: Request) {
     .where(whereClause)
     .orderBy(desc(schema.campaignApplications.createdAt))
     .limit(pageSize)
-    .offset(isCsv ? 0 : (page - 1) * pageSize);
+    .offset((page - 1) * pageSize);
 
-  if (isCsv) return csvResponse(rows, "applications.csv");
+  const total = rows.length > 0 ? Number(rows[0].__total) : 0;
+  const results = rows.map(({ __total, ...rest }) => rest);
 
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(schema.campaignApplications)
-    .innerJoin(schema.campaigns, eq(schema.campaigns.id, schema.campaignApplications.campaignId))
-    .innerJoin(schema.brandProfiles, eq(schema.brandProfiles.id, schema.campaigns.brandProfileId))
-    .innerJoin(schema.creatorProfiles, eq(schema.creatorProfiles.id, schema.campaignApplications.creatorProfileId))
-    .where(whereClause);
-
-  return NextResponse.json({ results: rows, total: Number(count), page, pageSize });
+  return NextResponse.json({ results, total, page, pageSize });
 }
 
 const VALID_STATUSES = ["viewed", "shortlisted", "accepted", "rejected", "withdrawn"] as const;

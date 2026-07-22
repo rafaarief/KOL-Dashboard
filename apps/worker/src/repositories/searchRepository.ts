@@ -1,5 +1,7 @@
-import { eq } from "drizzle-orm";
+import { and, eq, notInArray } from "drizzle-orm";
 import { getDb, schema } from "@kol-finder/database";
+
+const TERMINAL_STATUSES = ["completed", "failed", "cancelled"];
 
 export async function isSearchCancelled(searchId: string): Promise<boolean> {
   const db = getDb();
@@ -26,7 +28,14 @@ export async function markSearchStatus(
   }>
 ): Promise<void> {
   const db = getDb();
-  await db.update(schema.searches).set(updates).where(eq(schema.searches.id, searchId));
+  // Guarded against a search that's already terminal (completed/failed/cancelled) — BullMQ's
+  // stalled-job recovery can redeliver a job to a second worker after a crash/restart even with
+  // attempts:1 (that setting only bounds failure retries, not stalled-job redelivery), so without
+  // this a redelivered run could keep mutating progress on a search the first run already finished.
+  await db
+    .update(schema.searches)
+    .set(updates)
+    .where(and(eq(schema.searches.id, searchId), notInArray(schema.searches.status, TERMINAL_STATUSES)));
 }
 
 export async function recordSearchKeyword(

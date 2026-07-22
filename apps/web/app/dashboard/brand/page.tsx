@@ -31,49 +31,60 @@ export default async function BrandOverviewPage() {
     );
   }
 
-  const [{ activeCampaigns }] = await db
-    .select({ activeCampaigns: sql<number>`count(*) filter (where status = 'published')` })
-    .from(schema.campaigns)
-    .where(eq(schema.campaigns.brandProfileId, profile.id));
-  const [{ draftCampaigns }] = await db
-    .select({ draftCampaigns: sql<number>`count(*) filter (where status = 'draft')` })
-    .from(schema.campaigns)
-    .where(eq(schema.campaigns.brandProfileId, profile.id));
-  const applicantStatsRows = (await db.execute(
-    sql`select count(*)::int as "totalApplicants",
+  // Four fully independent queries (all only depend on profile.id/session.user.id) batched into
+  // one Promise.all — previously activeCampaigns/draftCampaigns were even two separate queries
+  // against the identical table/predicate that could've been one FILTER-combined query on its own.
+  const [campaignCountsRows, applicantStatsRows, [{ count: savedCreatorsCount }], recentApplicants] = await Promise.all([
+    db
+      .select({
+        activeCampaigns: sql<number>`count(*) filter (where status = 'published')`,
+        draftCampaigns: sql<number>`count(*) filter (where status = 'draft')`,
+      })
+      .from(schema.campaigns)
+      .where(eq(schema.campaigns.brandProfileId, profile.id)),
+    db.execute(
+      sql`select count(*)::int as "totalApplicants",
                count(*) filter (where status = 'submitted')::int as "pendingReview",
                count(*) filter (where status = 'shortlisted')::int as shortlisted,
                count(*) filter (where status = 'accepted')::int as accepted,
                count(*) filter (where created_at >= now() - interval '24 hours')::int as "today"
         from campaign_applications
         where campaign_id in (select id from campaigns where brand_profile_id = ${profile.id})`
-  )) as unknown as { totalApplicants: number; pendingReview: number; shortlisted: number; accepted: number; today: number }[];
-  const { totalApplicants, pendingReview, shortlisted, accepted, today } = applicantStatsRows[0] ?? {
+    ),
+    db.select({ count: sql<number>`count(*)` }).from(schema.savedCreators).where(eq(schema.savedCreators.userId, session.user.id)),
+    db
+      .select({
+        id: schema.campaignApplications.id,
+        status: schema.campaignApplications.status,
+        createdAt: schema.campaignApplications.createdAt,
+        campaignId: schema.campaigns.id,
+        campaignTitle: schema.campaigns.title,
+        creatorUsername: schema.creatorProfiles.username,
+        creatorDisplayName: schema.creatorProfiles.displayName,
+        creatorAvatarUrl: schema.creatorProfiles.avatarUrl,
+      })
+      .from(schema.campaignApplications)
+      .innerJoin(schema.campaigns, eq(schema.campaigns.id, schema.campaignApplications.campaignId))
+      .innerJoin(schema.creatorProfiles, eq(schema.creatorProfiles.id, schema.campaignApplications.creatorProfileId))
+      .where(eq(schema.campaigns.brandProfileId, profile.id))
+      .orderBy(sql`${schema.campaignApplications.createdAt} desc`)
+      .limit(5),
+  ]);
+
+  const [{ activeCampaigns, draftCampaigns }] = campaignCountsRows;
+  const { totalApplicants, pendingReview, shortlisted, accepted, today } = (applicantStatsRows as unknown as {
+    totalApplicants: number;
+    pendingReview: number;
+    shortlisted: number;
+    accepted: number;
+    today: number;
+  }[])[0] ?? {
     totalApplicants: 0,
     pendingReview: 0,
     shortlisted: 0,
     accepted: 0,
     today: 0,
   };
-  const [{ count: savedCreatorsCount }] = await db.select({ count: sql<number>`count(*)` }).from(schema.savedCreators).where(eq(schema.savedCreators.userId, session.user.id));
-
-  const recentApplicants = await db
-    .select({
-      id: schema.campaignApplications.id,
-      status: schema.campaignApplications.status,
-      createdAt: schema.campaignApplications.createdAt,
-      campaignId: schema.campaigns.id,
-      campaignTitle: schema.campaigns.title,
-      creatorUsername: schema.creatorProfiles.username,
-      creatorDisplayName: schema.creatorProfiles.displayName,
-      creatorAvatarUrl: schema.creatorProfiles.avatarUrl,
-    })
-    .from(schema.campaignApplications)
-    .innerJoin(schema.campaigns, eq(schema.campaigns.id, schema.campaignApplications.campaignId))
-    .innerJoin(schema.creatorProfiles, eq(schema.creatorProfiles.id, schema.campaignApplications.creatorProfileId))
-    .where(eq(schema.campaigns.brandProfileId, profile.id))
-    .orderBy(sql`${schema.campaignApplications.createdAt} desc`)
-    .limit(5);
 
   return (
     <div>

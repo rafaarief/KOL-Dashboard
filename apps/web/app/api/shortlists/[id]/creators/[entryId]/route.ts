@@ -2,7 +2,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 
@@ -14,12 +14,14 @@ const updateEntrySchema = z.object({
   finalPrice: z.number().nullable().optional(),
 });
 
-export async function PATCH(request: Request, { params }: { params: { entryId: string } }) {
+export async function PATCH(request: Request, { params }: { params: { id: string; entryId: string } }) {
   const body = await request.json().catch(() => null);
   const parsed = updateEntrySchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
 
   const db = getDb();
+  // Previously only filtered on entryId — any valid entry could be mutated through any
+  // shortlist's URL, since the shortlistId path segment was never checked against it.
   const [entry] = await db
     .update(schema.shortlistCreators)
     .set({
@@ -28,15 +30,20 @@ export async function PATCH(request: Request, { params }: { params: { entryId: s
       finalPrice: parsed.data.finalPrice?.toString(),
       updatedAt: new Date(),
     })
-    .where(eq(schema.shortlistCreators.id, params.entryId))
+    .where(and(eq(schema.shortlistCreators.id, params.entryId), eq(schema.shortlistCreators.shortlistId, params.id)))
     .returning();
 
+  if (!entry) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   return NextResponse.json({ entry });
 }
 
-export async function DELETE(_request: Request, { params }: { params: { entryId: string } }) {
+export async function DELETE(_request: Request, { params }: { params: { id: string; entryId: string } }) {
   const db = getDb();
-  await db.delete(schema.shortlistCreators).where(eq(schema.shortlistCreators.id, params.entryId));
+  const [deleted] = await db
+    .delete(schema.shortlistCreators)
+    .where(and(eq(schema.shortlistCreators.id, params.entryId), eq(schema.shortlistCreators.shortlistId, params.id)))
+    .returning({ id: schema.shortlistCreators.id });
 
+  if (!deleted) return NextResponse.json({ error: "NOT_FOUND" }, { status: 404 });
   return NextResponse.json({ ok: true });
 }

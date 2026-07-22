@@ -37,17 +37,19 @@ export async function GET(request: Request) {
 
   // Never select passwordHash — this endpoint previously returned it to the browser on every
   // admin users-page load (db.select() without a column list pulls every column).
+  // count(*) over() rides along with the paginated rows instead of a second round trip.
   const rows = await db
-    .select(SAFE_COLUMNS)
+    .select({ ...SAFE_COLUMNS, __total: sql<number>`count(*) over()` })
     .from(schema.users)
     .where(whereClause)
     .orderBy(desc(schema.users.createdAt))
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 
-  const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(schema.users).where(whereClause);
+  const total = rows.length > 0 ? Number(rows[0].__total) : 0;
+  const results = rows.map(({ __total, ...rest }) => rest);
 
-  return NextResponse.json({ results: rows, total: Number(count), page, pageSize });
+  return NextResponse.json({ results, total, page, pageSize });
 }
 
 const patchSchema = z.object({

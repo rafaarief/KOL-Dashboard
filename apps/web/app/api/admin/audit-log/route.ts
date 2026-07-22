@@ -39,6 +39,7 @@ export async function GET(request: Request) {
       metadata: schema.adminAuditLog.metadata,
       createdAt: schema.adminAuditLog.createdAt,
       actorEmail: schema.users.email,
+      __total: sql<number>`count(*) over()`,
     })
     .from(schema.adminAuditLog)
     .leftJoin(schema.users, eq(schema.users.id, schema.adminAuditLog.actorUserId))
@@ -47,11 +48,8 @@ export async function GET(request: Request) {
     .limit(pageSize)
     .offset((page - 1) * pageSize);
 
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(schema.adminAuditLog)
-    .leftJoin(schema.users, eq(schema.users.id, schema.adminAuditLog.actorUserId))
-    .where(whereClause);
+  const total = rows.length > 0 ? Number(rows[0].__total) : 0;
+  const results = rows.map(({ __total, ...rest }) => rest);
 
-  return NextResponse.json({ results: rows, total: Number(count), page, pageSize });
+  return NextResponse.json({ results, total, page, pageSize });
 }

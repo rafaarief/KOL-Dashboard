@@ -67,7 +67,7 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => null);
   const type = body?.type as keyof typeof TABLES | undefined;
   const name = (body?.name as string | undefined)?.trim();
-  if (!type || !name || !(type in TABLES)) {
+  if (!type || !name || name.length > 120 || !(type in TABLES)) {
     return NextResponse.json({ error: "INVALID_INPUT" }, { status: 400 });
   }
 

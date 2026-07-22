@@ -62,7 +62,11 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
   const db = getDb();
   // A withdrawn application is off-limits to brand actions — the creator pulled out, so it
-  // shouldn't be shortlistable/acceptable/rejectable back into an active state.
+  // shouldn't be shortlistable/acceptable/rejectable back into an active state. Accepting is
+  // additionally capped at the campaign's quota (checked in the same WHERE, not a separate
+  // pre-check) — without this a brand could accept more creators than creatorCountNeeded while
+  // the public campaign page's slotsRemaining independently clamps to 0, leaving the two views
+  // disagreeing about how many slots are actually open.
   const [updated] = await db
     .update(schema.campaignApplications)
     .set({ status, updatedAt: new Date() })
@@ -70,13 +74,17 @@ export async function PATCH(request: Request, { params }: { params: { id: string
       and(
         eq(schema.campaignApplications.id, applicationId),
         eq(schema.campaignApplications.campaignId, params.id),
-        ne(schema.campaignApplications.status, "withdrawn")
+        ne(schema.campaignApplications.status, "withdrawn"),
+        status === "accepted"
+          ? sql`(select count(*) from campaign_applications ca2 where ca2.campaign_id = ${params.id} and ca2.status = 'accepted')
+                < (select creator_count_needed from campaigns where id = ${params.id})`
+          : sql`true`
       )
     )
     .returning({ id: schema.campaignApplications.id });
 
   if (!updated) {
-    return NextResponse.json({ error: "INVALID_TRANSITION" }, { status: 409 });
+    return NextResponse.json({ error: status === "accepted" ? "QUOTA_FULL" : "INVALID_TRANSITION" }, { status: 409 });
   }
 
   // Recompute from the source of truth rather than incrementing, so re-triggering this

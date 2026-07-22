@@ -156,7 +156,7 @@ export async function insertSearchResult(result: {
   rankPosition: number;
 }): Promise<void> {
   const db = getDb();
-  await db.insert(schema.searchResults).values({
+  const values = {
     searchId: result.searchId,
     creatorId: result.creatorId,
     primaryVideoId: result.primaryVideoId,
@@ -170,5 +170,13 @@ export async function insertSearchResult(result: {
     rankingLabel: result.rankingLabel,
     rankingExplanation: result.rankingExplanation,
     rankPosition: result.rankPosition,
-  });
+  };
+  // A stalled BullMQ job redelivered to a second worker (see markSearchStatus in
+  // searchRepository.ts for the identical rationale) could otherwise re-insert the same
+  // (searchId, creatorId) pair and hit the new unique constraint — refresh with the latest
+  // computed scores instead of throwing.
+  await db
+    .insert(schema.searchResults)
+    .values(values)
+    .onConflictDoUpdate({ target: [schema.searchResults.searchId, schema.searchResults.creatorId], set: values });
 }

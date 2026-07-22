@@ -25,37 +25,50 @@ export async function GET(request: Request) {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+  const BASE_COLUMNS = {
+    id: schema.campaigns.id,
+    title: schema.campaigns.title,
+    slug: schema.campaigns.slug,
+    status: schema.campaigns.status,
+    budgetType: schema.campaigns.budgetType,
+    budgetPerCreator: schema.campaigns.budgetPerCreator,
+    budgetMin: schema.campaigns.budgetMin,
+    budgetMax: schema.campaigns.budgetMax,
+    creatorCountNeeded: schema.campaigns.creatorCountNeeded,
+    creatorCountAccepted: schema.campaigns.creatorCountAccepted,
+    applicationDeadline: schema.campaigns.applicationDeadline,
+    publishedAt: schema.campaigns.publishedAt,
+    brandName: schema.brandProfiles.brandName,
+    categoryName: schema.marketplaceCategories.name,
+    applicationCount: sql<number>`(select count(*) from campaign_applications ca where ca.campaign_id = campaigns.id)`,
+  };
+
+  if (isCsv) {
+    const rows = await db
+      .select(BASE_COLUMNS)
+      .from(schema.campaigns)
+      .innerJoin(schema.brandProfiles, eq(schema.brandProfiles.id, schema.campaigns.brandProfileId))
+      .leftJoin(schema.marketplaceCategories, eq(schema.marketplaceCategories.id, schema.campaigns.categoryId))
+      .where(whereClause)
+      .orderBy(desc(schema.campaigns.createdAt))
+      .limit(pageSize);
+    return csvResponse(rows, "campaigns.csv");
+  }
+
   const rows = await db
-    .select({
-      id: schema.campaigns.id,
-      title: schema.campaigns.title,
-      slug: schema.campaigns.slug,
-      status: schema.campaigns.status,
-      budgetType: schema.campaigns.budgetType,
-      budgetPerCreator: schema.campaigns.budgetPerCreator,
-      budgetMin: schema.campaigns.budgetMin,
-      budgetMax: schema.campaigns.budgetMax,
-      creatorCountNeeded: schema.campaigns.creatorCountNeeded,
-      creatorCountAccepted: schema.campaigns.creatorCountAccepted,
-      applicationDeadline: schema.campaigns.applicationDeadline,
-      publishedAt: schema.campaigns.publishedAt,
-      brandName: schema.brandProfiles.brandName,
-      categoryName: schema.marketplaceCategories.name,
-      applicationCount: sql<number>`(select count(*) from campaign_applications ca where ca.campaign_id = campaigns.id)`,
-    })
+    .select({ ...BASE_COLUMNS, __total: sql<number>`count(*) over()` })
     .from(schema.campaigns)
     .innerJoin(schema.brandProfiles, eq(schema.brandProfiles.id, schema.campaigns.brandProfileId))
     .leftJoin(schema.marketplaceCategories, eq(schema.marketplaceCategories.id, schema.campaigns.categoryId))
     .where(whereClause)
     .orderBy(desc(schema.campaigns.createdAt))
     .limit(pageSize)
-    .offset(isCsv ? 0 : (page - 1) * pageSize);
+    .offset((page - 1) * pageSize);
 
-  if (isCsv) return csvResponse(rows, "campaigns.csv");
+  const total = rows.length > 0 ? Number(rows[0].__total) : 0;
+  const results = rows.map(({ __total, ...rest }) => rest);
 
-  const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(schema.campaigns).where(whereClause);
-
-  return NextResponse.json({ results: rows, total: Number(count), page, pageSize });
+  return NextResponse.json({ results, total, page, pageSize });
 }
 
 // State-restricted transitions mirror the brand-side state machine (app/api/brand/campaigns/[id]/route.ts)

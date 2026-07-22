@@ -25,37 +25,47 @@ export async function GET(request: Request) {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+  const BASE_COLUMNS = {
+    id: schema.brandProfiles.id,
+    slug: schema.brandProfiles.slug,
+    brandName: schema.brandProfiles.brandName,
+    logoUrl: schema.brandProfiles.logoUrl,
+    industry: schema.brandProfiles.industry,
+    city: schema.brandProfiles.city,
+    email: schema.users.email,
+    verificationStatus: schema.brandProfiles.verificationStatus,
+    status: schema.brandProfiles.status,
+    featured: schema.brandProfiles.featured,
+    createdAt: schema.brandProfiles.createdAt,
+    activeCampaigns: sql<number>`(select count(*) from campaigns c where c.brand_profile_id = brand_profiles.id and c.status = 'published')`,
+  };
+
+  if (isCsv) {
+    const rows = await db
+      .select(BASE_COLUMNS)
+      .from(schema.brandProfiles)
+      .innerJoin(schema.users, eq(schema.users.id, schema.brandProfiles.userId))
+      .where(whereClause)
+      .orderBy(desc(schema.brandProfiles.createdAt))
+      .limit(pageSize);
+    return csvResponse(rows, "brands.csv");
+  }
+
+  // count(*) over() rides along with the paginated rows in one query instead of a second
+  // round trip re-running the same where/joins just to get the total.
   const rows = await db
-    .select({
-      id: schema.brandProfiles.id,
-      slug: schema.brandProfiles.slug,
-      brandName: schema.brandProfiles.brandName,
-      logoUrl: schema.brandProfiles.logoUrl,
-      industry: schema.brandProfiles.industry,
-      city: schema.brandProfiles.city,
-      email: schema.users.email,
-      verificationStatus: schema.brandProfiles.verificationStatus,
-      status: schema.brandProfiles.status,
-      featured: schema.brandProfiles.featured,
-      createdAt: schema.brandProfiles.createdAt,
-      activeCampaigns: sql<number>`(select count(*) from campaigns c where c.brand_profile_id = brand_profiles.id and c.status = 'published')`,
-    })
+    .select({ ...BASE_COLUMNS, __total: sql<number>`count(*) over()` })
     .from(schema.brandProfiles)
     .innerJoin(schema.users, eq(schema.users.id, schema.brandProfiles.userId))
     .where(whereClause)
     .orderBy(desc(schema.brandProfiles.createdAt))
     .limit(pageSize)
-    .offset(isCsv ? 0 : (page - 1) * pageSize);
+    .offset((page - 1) * pageSize);
 
-  if (isCsv) return csvResponse(rows, "brands.csv");
+  const total = rows.length > 0 ? Number(rows[0].__total) : 0;
+  const results = rows.map(({ __total, ...rest }) => rest);
 
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(schema.brandProfiles)
-    .innerJoin(schema.users, eq(schema.users.id, schema.brandProfiles.userId))
-    .where(whereClause);
-
-  return NextResponse.json({ results: rows, total: Number(count), page, pageSize });
+  return NextResponse.json({ results, total, page, pageSize });
 }
 
 const ACTIONS = {

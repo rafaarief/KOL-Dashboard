@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { OcBadge, OcCard } from "@/components/oc/primitives";
+import { useFilteredList } from "@/lib/useFilteredList";
+import { OcBadge, OcCard, Pagination } from "@/components/oc/primitives";
 import { useToast } from "@/components/oc/Toast";
 
 interface ReportRow {
@@ -24,18 +25,10 @@ const TARGET_HREF: Record<string, (id: string) => string> = {
 const OPEN_STATUSES = new Set(["open", "under_review"]);
 
 export default function AdminReportsPage() {
-  const [rows, setRows] = useState<ReportRow[]>([]);
+  const { rows, total, page, setPage, totalPages, reload } = useFilteredList<ReportRow>("/api/admin/reports", {});
   const { showToast } = useToast();
   const [reasonDraftId, setReasonDraftId] = useState<string | null>(null);
   const [reasonDraft, setReasonDraft] = useState("");
-
-  function load() {
-    fetch("/api/admin/reports")
-      .then((res) => res.json())
-      .then((body) => setRows(body.results ?? []));
-  }
-
-  useEffect(load, []);
 
   async function resolve(id: string, status: "under_review" | "resolved" | "dismissed", resolutionReason?: string) {
     const response = await fetch("/api/admin/reports", {
@@ -45,13 +38,13 @@ export default function AdminReportsPage() {
     });
     showToast(response.ok ? `Report ${status.replace("_", " ")}.` : "That action failed.", response.ok ? "success" : "error");
     setReasonDraftId(null);
-    load();
+    reload();
   }
 
   return (
     <div>
       <h1 className="text-xl font-semibold text-oc-ink">Reports</h1>
-      <p className="mt-1 text-sm text-oc-ink-muted">User-submitted reports on campaigns, creators, or brands.</p>
+      <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} user-submitted reports on campaigns, creators, or brands.</p>
 
       <OcCard className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[750px] text-left text-sm">
@@ -140,6 +133,8 @@ export default function AdminReportsPage() {
           </tbody>
         </table>
       </OcCard>
+
+      <Pagination page={page} totalPages={totalPages} onPrevious={() => setPage((p) => Math.max(1, p - 1))} onNext={() => setPage((p) => Math.min(totalPages, p + 1))} />
     </div>
   );
 }

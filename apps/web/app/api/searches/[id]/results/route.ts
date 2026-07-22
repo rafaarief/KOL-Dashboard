@@ -33,25 +33,26 @@ export async function GET(request: Request, { params }: { params: { id: string }
   if (niche) conditions.push(eq(schema.creators.primaryNiche, niche));
   if (location) conditions.push(eq(schema.creators.inferredLocation, location));
 
-  const rows = await db
-    .select({
-      result: schema.searchResults,
-      creator: schema.creators,
-      video: schema.videos,
-    })
-    .from(schema.searchResults)
-    .innerJoin(schema.creators, eq(schema.searchResults.creatorId, schema.creators.id))
-    .leftJoin(schema.videos, eq(schema.searchResults.primaryVideoId, schema.videos.id))
-    .where(and(...conditions))
-    .orderBy(SORT_COLUMNS[sort] ?? SORT_COLUMNS.best_match)
-    .limit(pageSize)
-    .offset((page - 1) * pageSize);
-
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(schema.searchResults)
-    .innerJoin(schema.creators, eq(schema.searchResults.creatorId, schema.creators.id))
-    .where(and(...conditions));
+  const [rows, [{ count }]] = await Promise.all([
+    db
+      .select({
+        result: schema.searchResults,
+        creator: schema.creators,
+        video: schema.videos,
+      })
+      .from(schema.searchResults)
+      .innerJoin(schema.creators, eq(schema.searchResults.creatorId, schema.creators.id))
+      .leftJoin(schema.videos, eq(schema.searchResults.primaryVideoId, schema.videos.id))
+      .where(and(...conditions))
+      .orderBy(SORT_COLUMNS[sort] ?? SORT_COLUMNS.best_match)
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db
+      .select({ count: sql<number>`count(*)` })
+      .from(schema.searchResults)
+      .innerJoin(schema.creators, eq(schema.searchResults.creatorId, schema.creators.id))
+      .where(and(...conditions)),
+  ]);
 
   return NextResponse.json({ results: rows, total: Number(count), page, pageSize });
 }

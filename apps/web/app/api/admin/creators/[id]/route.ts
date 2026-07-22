@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { requireRole } from "@/lib/requireRole";
@@ -58,7 +58,10 @@ export async function GET(_request: Request, { params }: { params: { id: string 
       .from(schema.campaignApplications)
       .innerJoin(schema.campaigns, eq(schema.campaigns.id, schema.campaignApplications.campaignId))
       .where(eq(schema.campaignApplications.creatorProfileId, profile.id)),
-    db.select().from(schema.reports).where(eq(schema.reports.targetType, "creator")),
+    db
+      .select()
+      .from(schema.reports)
+      .where(and(eq(schema.reports.targetType, "creator"), eq(schema.reports.targetId, profile.id))),
   ]);
 
   return NextResponse.json({
@@ -68,7 +71,7 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     portfolioItems,
     brandExperiences,
     applications,
-    reports: reports.filter((r) => r.targetId === profile.id),
+    reports,
   });
 }
 

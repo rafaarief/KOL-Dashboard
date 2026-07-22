@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { and, desc, eq, gte, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { requireRole } from "@/lib/requireRole";
 import { recordAudit } from "@/lib/auditLog";
@@ -31,37 +31,45 @@ export async function GET(request: Request) {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
+  const BASE_COLUMNS = {
+    id: schema.creatorProfiles.id,
+    username: schema.creatorProfiles.username,
+    displayName: schema.creatorProfiles.displayName,
+    avatarUrl: schema.creatorProfiles.avatarUrl,
+    city: schema.creatorProfiles.city,
+    email: schema.users.email,
+    availabilityStatus: schema.creatorProfiles.availabilityStatus,
+    verificationStatus: schema.creatorProfiles.verificationStatus,
+    status: schema.creatorProfiles.status,
+    featured: schema.creatorProfiles.featured,
+    createdAt: schema.creatorProfiles.createdAt,
+    primaryNicheId: schema.creatorProfiles.primaryNicheId,
+  };
+
+  if (isCsv) {
+    const rows = await db
+      .select(BASE_COLUMNS)
+      .from(schema.creatorProfiles)
+      .innerJoin(schema.users, eq(schema.users.id, schema.creatorProfiles.userId))
+      .where(whereClause)
+      .orderBy(desc(schema.creatorProfiles.createdAt))
+      .limit(pageSize);
+    return csvResponse(rows, "creators.csv");
+  }
+
   const rows = await db
-    .select({
-      id: schema.creatorProfiles.id,
-      username: schema.creatorProfiles.username,
-      displayName: schema.creatorProfiles.displayName,
-      avatarUrl: schema.creatorProfiles.avatarUrl,
-      city: schema.creatorProfiles.city,
-      email: schema.users.email,
-      availabilityStatus: schema.creatorProfiles.availabilityStatus,
-      verificationStatus: schema.creatorProfiles.verificationStatus,
-      status: schema.creatorProfiles.status,
-      featured: schema.creatorProfiles.featured,
-      createdAt: schema.creatorProfiles.createdAt,
-      primaryNicheId: schema.creatorProfiles.primaryNicheId,
-    })
+    .select({ ...BASE_COLUMNS, __total: sql<number>`count(*) over()` })
     .from(schema.creatorProfiles)
     .innerJoin(schema.users, eq(schema.users.id, schema.creatorProfiles.userId))
     .where(whereClause)
     .orderBy(desc(schema.creatorProfiles.createdAt))
     .limit(pageSize)
-    .offset(isCsv ? 0 : (page - 1) * pageSize);
+    .offset((page - 1) * pageSize);
 
-  if (isCsv) return csvResponse(rows, "creators.csv");
+  const total = rows.length > 0 ? Number(rows[0].__total) : 0;
+  const results = rows.map(({ __total, ...rest }) => rest);
 
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(schema.creatorProfiles)
-    .innerJoin(schema.users, eq(schema.users.id, schema.creatorProfiles.userId))
-    .where(whereClause);
-
-  return NextResponse.json({ results: rows, total: Number(count), page, pageSize });
+  return NextResponse.json({ results, total, page, pageSize });
 }
 
 const ACTIONS = {

@@ -8,21 +8,19 @@ import { getDb, schema } from "@/lib/db";
 export async function GET() {
   const db = getDb();
 
-  const domisiliRows = await db
-    .selectDistinct({ domisili: schema.nanoKols.domisili })
-    .from(schema.nanoKols)
-    .where(isNotNull(schema.nanoKols.domisili))
-    .orderBy(asc(schema.nanoKols.domisili));
-
-  const genderRows = await db
-    .selectDistinct({ normalizedGender: schema.nanoKols.normalizedGender })
-    .from(schema.nanoKols)
-    .where(isNotNull(schema.nanoKols.normalizedGender))
-    .orderBy(asc(schema.nanoKols.normalizedGender));
-
-  const categoryRows = await db.execute(
-    sql`select distinct jsonb_array_elements_text(categories) as category from nano_kols order by category`
-  );
+  const [domisiliRows, genderRows, categoryRows] = await Promise.all([
+    db
+      .selectDistinct({ domisili: schema.nanoKols.domisili })
+      .from(schema.nanoKols)
+      .where(isNotNull(schema.nanoKols.domisili))
+      .orderBy(asc(schema.nanoKols.domisili)),
+    db
+      .selectDistinct({ normalizedGender: schema.nanoKols.normalizedGender })
+      .from(schema.nanoKols)
+      .where(isNotNull(schema.nanoKols.normalizedGender))
+      .orderBy(asc(schema.nanoKols.normalizedGender)),
+    db.execute(sql`select distinct jsonb_array_elements_text(categories) as category from nano_kols order by category`),
+  ]);
 
   return NextResponse.json({
     domisili: domisiliRows.map((row) => row.domisili).filter((value): value is string => Boolean(value)),

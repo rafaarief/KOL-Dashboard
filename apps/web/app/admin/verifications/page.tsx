@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { OcBadge, OcCard } from "@/components/oc/primitives";
+import { useState } from "react";
+import { useFilteredList } from "@/lib/useFilteredList";
+import { OcBadge, OcCard, Pagination } from "@/components/oc/primitives";
 import { useToast } from "@/components/oc/Toast";
 
 interface VerificationRow {
@@ -23,18 +24,10 @@ const TONE: Record<string, "success" | "danger" | "warning" | "info" | "neutral"
 };
 
 export default function AdminVerificationsPage() {
-  const [rows, setRows] = useState<VerificationRow[]>([]);
+  const { rows, total, page, setPage, totalPages, reload } = useFilteredList<VerificationRow>("/api/admin/verifications", {});
   const { showToast } = useToast();
   const [noteDraftId, setNoteDraftId] = useState<string | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
-
-  function load() {
-    fetch("/api/admin/verifications")
-      .then((res) => res.json())
-      .then((body) => setRows(body.results ?? []));
-  }
-
-  useEffect(load, []);
 
   async function decide(id: string, decision: "approved" | "rejected" | "needs_information") {
     const response = await fetch("/api/admin/verifications", {
@@ -44,13 +37,13 @@ export default function AdminVerificationsPage() {
     });
     showToast(response.ok ? `Verification marked ${decision.replace("_", " ")}.` : "That action failed.", response.ok ? "success" : "error");
     setNoteDraftId(null);
-    load();
+    reload();
   }
 
   return (
     <div>
       <h1 className="text-xl font-semibold text-oc-ink">Verification Requests</h1>
-      <p className="mt-1 text-sm text-oc-ink-muted">Approve, reject, or request more information on creator and brand verification requests.</p>
+      <p className="mt-1 text-sm text-oc-ink-muted">{total.toLocaleString()} requests — approve, reject, or request more information.</p>
 
       <OcCard className="mt-4 overflow-x-auto">
         <table className="w-full min-w-[750px] text-left text-sm">
@@ -125,6 +118,8 @@ export default function AdminVerificationsPage() {
           </tbody>
         </table>
       </OcCard>
+
+      <Pagination page={page} totalPages={totalPages} onPrevious={() => setPage((p) => Math.max(1, p - 1))} onNext={() => setPage((p) => Math.min(totalPages, p + 1))} />
     </div>
   );
 }

@@ -31,18 +31,18 @@ export default async function CreatorOverviewPage() {
     );
   }
 
-  const [rateCardCount, portfolioCount, socialAccountCount] = await Promise.all([
+  // All five independent (only `recommended` below genuinely depends on `applications`, via
+  // appliedCampaignIds) — batched into one Promise.all instead of running as separate awaits.
+  const [rateCardCount, portfolioCount, socialAccountCount, applications, [{ count: savedCount }]] = await Promise.all([
     db.select({ count: sql<number>`count(*)` }).from(schema.creatorRateCards).where(eq(schema.creatorRateCards.creatorProfileId, profile.id)),
     db.select({ count: sql<number>`count(*)` }).from(schema.creatorPortfolioItems).where(eq(schema.creatorPortfolioItems.creatorProfileId, profile.id)),
     db.select({ count: sql<number>`count(*)` }).from(schema.creatorSocialAccounts).where(eq(schema.creatorSocialAccounts.creatorProfileId, profile.id)),
+    db
+      .select({ id: schema.campaignApplications.id, status: schema.campaignApplications.status, createdAt: schema.campaignApplications.createdAt })
+      .from(schema.campaignApplications)
+      .where(eq(schema.campaignApplications.creatorProfileId, profile.id)),
+    db.select({ count: sql<number>`count(*)` }).from(schema.savedCampaigns).where(eq(schema.savedCampaigns.userId, session.user.id)),
   ]);
-
-  const applications = await db
-    .select({ id: schema.campaignApplications.id, status: schema.campaignApplications.status, createdAt: schema.campaignApplications.createdAt })
-    .from(schema.campaignApplications)
-    .where(eq(schema.campaignApplications.creatorProfileId, profile.id));
-
-  const [{ count: savedCount }] = await db.select({ count: sql<number>`count(*)` }).from(schema.savedCampaigns).where(eq(schema.savedCampaigns.userId, session.user.id));
 
   const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
   const todaysApplications = applications.filter((a) => new Date(a.createdAt) >= oneDayAgo).length;

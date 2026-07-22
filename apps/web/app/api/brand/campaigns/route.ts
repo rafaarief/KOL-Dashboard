@@ -6,6 +6,7 @@ import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { requireRole } from "@/lib/requireRole";
 import { slugify } from "@/lib/slugify";
+import { parseWibEndOfDay, parseWibStartOfDay } from "@/lib/wibDate";
 
 async function getOwnBrandProfileId(userId: string) {
   const db = getDb();
@@ -91,10 +92,10 @@ export async function POST(request: Request) {
       slug,
       status: publishNow ? "published" : "draft",
       publishedAt: publishNow ? new Date() : null,
-      applicationDeadline: data.applicationDeadline ? new Date(data.applicationDeadline) : null,
-      contentDeadline: data.contentDeadline ? new Date(data.contentDeadline) : null,
-      campaignStartDate: data.campaignStartDate ? new Date(data.campaignStartDate) : null,
-      campaignEndDate: data.campaignEndDate ? new Date(data.campaignEndDate) : null,
+      applicationDeadline: data.applicationDeadline ? parseWibEndOfDay(data.applicationDeadline) : null,
+      contentDeadline: data.contentDeadline ? parseWibEndOfDay(data.contentDeadline) : null,
+      campaignStartDate: data.campaignStartDate ? parseWibStartOfDay(data.campaignStartDate) : null,
+      campaignEndDate: data.campaignEndDate ? parseWibEndOfDay(data.campaignEndDate) : null,
       title: data.title,
       categoryId: data.categoryId,
       shortDescription: data.shortDescription,

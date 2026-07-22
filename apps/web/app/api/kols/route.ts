@@ -45,18 +45,16 @@ export async function GET(request: Request) {
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const rows = await db
-    .select()
-    .from(schema.nanoKols)
-    .where(whereClause)
-    .orderBy(SORT_COLUMNS[sort] ?? SORT_COLUMNS.newest)
-    .limit(pageSize)
-    .offset((page - 1) * pageSize);
-
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(schema.nanoKols)
-    .where(whereClause);
+  const [rows, [{ count }]] = await Promise.all([
+    db
+      .select()
+      .from(schema.nanoKols)
+      .where(whereClause)
+      .orderBy(SORT_COLUMNS[sort] ?? SORT_COLUMNS.newest)
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    db.select({ count: sql<number>`count(*)` }).from(schema.nanoKols).where(whereClause),
+  ]);
 
   return NextResponse.json({ results: rows, total: Number(count), page, pageSize });
 }
