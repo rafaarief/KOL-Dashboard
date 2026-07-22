@@ -9,6 +9,7 @@ import { GoogleSignInButton } from "@/components/oc/GoogleSignInButton";
 
 const ROLE_HOME: Record<string, string> = {
   admin: "/admin",
+  outreach_admin: "/admin/outreach",
   brand: "/dashboard/brand",
   creator: "/dashboard/creator",
 };
