@@ -83,6 +83,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (!parsed.success) return NextResponse.json({ error: "INVALID_INPUT", details: parsed.error.flatten() }, { status: 400 });
 
   const { logFollowUp, notes, status, ...rest } = parsed.data;
+  if (rest.email) rest.email = rest.email.toLowerCase().trim();
 
   const db = getDb();
   const [before] = await db.select().from(schema.brandOutreach).where(eq(schema.brandOutreach.id, params.id)).limit(1);
@@ -99,30 +100,42 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
   await db.update(schema.brandOutreach).set(updates).where(eq(schema.brandOutreach.id, params.id));
 
+  // Returned directly to the client so it can merge the change locally instead of re-fetching
+  // the whole detail + timeline from scratch after every single status/note/follow-up action.
+  const newEvents: Array<{ id: string; eventType: string; fromStatus: string | null; toStatus: string | null; note: string | null; createdAt: Date }> = [];
+
   if (status && status !== before.status) {
-    await db.insert(schema.brandOutreachEvents).values({
-      brandOutreachId: params.id,
-      eventType: "status_changed",
-      fromStatus: before.status,
-      toStatus: status,
-      createdByUserId: session.user.id,
-    });
+    const [event] = await db
+      .insert(schema.brandOutreachEvents)
+      .values({ brandOutreachId: params.id, eventType: "status_changed", fromStatus: before.status, toStatus: status, createdByUserId: session.user.id })
+      .returning();
+    newEvents.push(event);
   }
   if (logFollowUp) {
-    await db.insert(schema.brandOutreachEvents).values({
-      brandOutreachId: params.id,
-      eventType: "follow_up",
-      note: notes || null,
-      createdByUserId: session.user.id,
-    });
+    const [event] = await db
+      .insert(schema.brandOutreachEvents)
+      .values({ brandOutreachId: params.id, eventType: "follow_up", note: notes || null, createdByUserId: session.user.id })
+      .returning();
+    newEvents.push(event);
   } else if (notes !== undefined && notes !== before.notes) {
-    await db.insert(schema.brandOutreachEvents).values({
-      brandOutreachId: params.id,
-      eventType: "note",
-      note: notes || null,
-      createdByUserId: session.user.id,
-    });
+    const [event] = await db
+      .insert(schema.brandOutreachEvents)
+      .values({ brandOutreachId: params.id, eventType: "note", note: notes || null, createdByUserId: session.user.id })
+      .returning();
+    newEvents.push(event);
   }
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({
+    success: true,
+    outreach: { ...updates, id: params.id },
+    events: newEvents.map((e) => ({
+      id: e.id,
+      eventType: e.eventType,
+      fromStatus: e.fromStatus,
+      toStatus: e.toStatus,
+      note: e.note,
+      createdByName: session.user.name ?? null,
+      createdAt: e.createdAt,
+    })),
+  });
 }

@@ -1,13 +1,39 @@
 export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { requireRole } from "@/lib/requireRole";
 import { csvResponse } from "@/lib/csv";
 import { findBrandDuplicates } from "@/lib/outreachDuplicateCheck";
 import { BRAND_OUTREACH_STATUSES, OUTREACH_SOURCES } from "@/lib/outreachEnums";
+import { brandKpis } from "@/lib/outreachMetrics";
+
+// Must stay textually identical to the expression indexed by brand_outreach_search_trgm_idx
+// (see packages/database/migrations/0010_*.sql) — otherwise Postgres can't use that index for
+// this ILIKE and every search falls back to a full sequential scan.
+const BRAND_SEARCH_BLOB = sql`(coalesce(${schema.brandOutreach.brandName}, '') || ' ' || coalesce(${schema.brandOutreach.email}, '') || ' ' || coalesce(${schema.brandOutreach.phone}, '') || ' ' || coalesce(${schema.brandOutreach.instagramUrl}, '') || ' ' || coalesce(${schema.brandOutreach.tiktokUrl}, '') || ' ' || coalesce(${schema.brandOutreach.website}, ''))`;
+
+const BASE_COLUMNS = {
+  id: schema.brandOutreach.id,
+  picUserId: schema.brandOutreach.picUserId,
+  picName: schema.users.fullName,
+  brandName: schema.brandOutreach.brandName,
+  industry: schema.brandOutreach.industry,
+  email: schema.brandOutreach.email,
+  phone: schema.brandOutreach.phone,
+  instagramUrl: schema.brandOutreach.instagramUrl,
+  instagramFollowers: schema.brandOutreach.instagramFollowers,
+  tiktokUrl: schema.brandOutreach.tiktokUrl,
+  tiktokFollowers: schema.brandOutreach.tiktokFollowers,
+  website: schema.brandOutreach.website,
+  source: schema.brandOutreach.source,
+  status: schema.brandOutreach.status,
+  notes: schema.brandOutreach.notes,
+  lastFollowUpAt: schema.brandOutreach.lastFollowUpAt,
+  createdAt: schema.brandOutreach.createdAt,
+};
 
 export async function GET(request: Request) {
   const session = await requireRole(["admin", "outreach_admin"]);
@@ -24,56 +50,40 @@ export async function GET(request: Request) {
 
   const db = getDb();
   const conditions = [];
-  if (q) {
-    conditions.push(
-      or(
-        ilike(schema.brandOutreach.brandName, `%${q}%`),
-        ilike(schema.brandOutreach.email, `%${q}%`),
-        ilike(schema.brandOutreach.phone, `%${q}%`),
-        ilike(schema.brandOutreach.instagramUrl, `%${q}%`),
-        ilike(schema.brandOutreach.tiktokUrl, `%${q}%`),
-        ilike(schema.brandOutreach.website, `%${q}%`)
-      )
-    );
-  }
+  if (q) conditions.push(sql`${BRAND_SEARCH_BLOB} ilike ${`%${q}%`}`);
   if (status) conditions.push(eq(schema.brandOutreach.status, status));
   if (source) conditions.push(eq(schema.brandOutreach.source, source));
   if (mine) conditions.push(eq(schema.brandOutreach.picUserId, session.user.id));
 
   const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-  const rows = await db
-    .select({
-      id: schema.brandOutreach.id,
-      picUserId: schema.brandOutreach.picUserId,
-      picName: schema.users.fullName,
-      brandName: schema.brandOutreach.brandName,
-      industry: schema.brandOutreach.industry,
-      email: schema.brandOutreach.email,
-      phone: schema.brandOutreach.phone,
-      instagramUrl: schema.brandOutreach.instagramUrl,
-      instagramFollowers: schema.brandOutreach.instagramFollowers,
-      tiktokUrl: schema.brandOutreach.tiktokUrl,
-      tiktokFollowers: schema.brandOutreach.tiktokFollowers,
-      website: schema.brandOutreach.website,
-      source: schema.brandOutreach.source,
-      status: schema.brandOutreach.status,
-      notes: schema.brandOutreach.notes,
-      lastFollowUpAt: schema.brandOutreach.lastFollowUpAt,
-      createdAt: schema.brandOutreach.createdAt,
-    })
-    .from(schema.brandOutreach)
-    .innerJoin(schema.users, eq(schema.users.id, schema.brandOutreach.picUserId))
-    .where(whereClause)
-    .orderBy(desc(schema.brandOutreach.createdAt))
-    .limit(pageSize)
-    .offset(isCsv ? 0 : (page - 1) * pageSize);
+  if (isCsv) {
+    const rows = await db
+      .select(BASE_COLUMNS)
+      .from(schema.brandOutreach)
+      .innerJoin(schema.users, eq(schema.users.id, schema.brandOutreach.picUserId))
+      .where(whereClause)
+      .orderBy(desc(schema.brandOutreach.createdAt))
+      .limit(pageSize);
+    return csvResponse(rows, "brand-outreach.csv");
+  }
 
-  if (isCsv) return csvResponse(rows, "brand-outreach.csv");
+  const [rows, kpis] = await Promise.all([
+    db
+      .select({ ...BASE_COLUMNS, __total: sql<number>`count(*) over()` })
+      .from(schema.brandOutreach)
+      .innerJoin(schema.users, eq(schema.users.id, schema.brandOutreach.picUserId))
+      .where(whereClause)
+      .orderBy(desc(schema.brandOutreach.createdAt))
+      .limit(pageSize)
+      .offset((page - 1) * pageSize),
+    brandKpis(),
+  ]);
 
-  const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(schema.brandOutreach).where(whereClause);
+  const total = rows.length > 0 ? Number(rows[0].__total) : 0;
+  const results = rows.map(({ __total, ...rest }) => rest);
 
-  return NextResponse.json({ results: rows, total: Number(count), page, pageSize });
+  return NextResponse.json({ results, total, page, pageSize, kpis });
 }
 
 const createSchema = z.object({
@@ -100,9 +110,10 @@ export async function POST(request: Request) {
   if (!parsed.success) return NextResponse.json({ error: "INVALID_INPUT", details: parsed.error.flatten() }, { status: 400 });
 
   const { confirmDuplicate, ...data } = parsed.data;
+  const email = data.email ? data.email.toLowerCase().trim() : "";
 
   if (!confirmDuplicate) {
-    const matches = await findBrandDuplicates({ email: data.email, phone: data.phone, instagramUrl: data.instagramUrl, tiktokUrl: data.tiktokUrl });
+    const matches = await findBrandDuplicates({ email, phone: data.phone, instagramUrl: data.instagramUrl, tiktokUrl: data.tiktokUrl });
     if (matches.length > 0) {
       return NextResponse.json({ error: "POSSIBLE_DUPLICATE", matches }, { status: 409 });
     }
@@ -116,7 +127,7 @@ export async function POST(request: Request) {
       picUserId: session.user.id,
       brandName: data.brandName,
       industry: data.industry || null,
-      email: data.email || null,
+      email: email || null,
       phone: data.phone || null,
       instagramUrl: data.instagramUrl || null,
       instagramFollowers: data.instagramFollowers ?? null,

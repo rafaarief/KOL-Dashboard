@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { desc, eq, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
@@ -189,10 +190,9 @@ export default async function LandingPage() {
                 key={c.slug}
                 className={`absolute ${style.pos} ${style.size} ${style.rotate} ${style.tile} rounded-oc-lg p-4 shadow-oc`}
               >
-                <Link href={`/campaigns/${c.slug}`} className="block h-[150px] w-full overflow-hidden rounded-oc-input bg-white/35">
+                <Link href={`/campaigns/${c.slug}`} className="relative block h-[150px] w-full overflow-hidden rounded-oc-input bg-white/35">
                   {c.coverImageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={c.coverImageUrl} alt={c.coverImageAlt || c.title} className="h-full w-full object-cover" />
+                    <Image src={c.coverImageUrl} alt={c.coverImageAlt || c.title} fill unoptimized sizes="200px" className="object-cover" />
                   ) : (
                     <div className="flex h-full w-full items-center justify-center">
                       <VisualIcon className="h-9 w-9 text-oc-ink/40" strokeWidth={1.5} aria-hidden="true" />

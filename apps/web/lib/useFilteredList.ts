@@ -7,9 +7,18 @@ import { useEffect, useMemo, useRef, useState } from "react";
  * handling, forced reload after a mutation). Extracted here because copy-pasting it per page
  * (the pre-existing convention) was becoming its own source of bugs across 6+ near-identical
  * new admin pages. */
-export function useFilteredList<T>(basePath: string, params: Record<string, string | boolean | undefined>, pageSize = 30) {
+export function useFilteredList<T, TExtra = undefined>(
+  basePath: string,
+  params: Record<string, string | boolean | undefined>,
+  pageSize = 30,
+  // Optional: reads body[extraKey] out of the same response the rows/total already come from,
+  // instead of the page firing a second independent fetch for the same-ish data (e.g. KPI cards
+  // alongside a list) — one request/one DB round trip to paint the page instead of two.
+  extraKey?: string
+) {
   const [rows, setRows] = useState<T[]>([]);
   const [total, setTotal] = useState(0);
+  const [extra, setExtra] = useState<TExtra | undefined>(undefined);
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +61,7 @@ export function useFilteredList<T>(basePath: string, params: Record<string, stri
         if (cancelled) return;
         setRows(body.results ?? []);
         setTotal(body.total ?? 0);
+        if (extraKey) setExtra(body[extraKey]);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -65,13 +75,14 @@ export function useFilteredList<T>(basePath: string, params: Record<string, stri
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [basePath, filterKey, effectivePage, pageSize, reloadToken]);
+  }, [basePath, filterKey, effectivePage, pageSize, reloadToken, extraKey]);
 
   const totalPages = useMemo(() => Math.max(1, Math.ceil(total / pageSize)), [total, pageSize]);
 
   return {
     rows,
     total,
+    extra,
     page: effectivePage,
     setPage,
     totalPages,

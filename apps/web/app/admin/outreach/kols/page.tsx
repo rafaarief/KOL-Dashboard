@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useDebouncedValue, useFilteredList } from "@/lib/useFilteredList";
 import { OcCard, OcLinkButton, OutreachStatusBadge, Pagination } from "@/components/oc/primitives";
@@ -48,20 +48,21 @@ export default function KolOutreachPage() {
   const [source, setSource] = useState("");
   const [mine, setMine] = useState(false);
   const debouncedQ = useDebouncedValue(q);
-  const { rows, total, page, setPage, totalPages, isLoading, error } = useFilteredList<KolOutreachRow>("/api/admin/outreach/kols", {
-    q: debouncedQ,
-    status,
-    source,
-    mine,
-  });
-  const [kpis, setKpis] = useState<KolKpis | null>(null);
-
-  useEffect(() => {
-    fetch("/api/admin/outreach/metrics?scope=kol")
-      .then((res) => (res.ok ? res.json() : null))
-      .then(setKpis)
-      .catch(() => setKpis(null));
-  }, []);
+  const {
+    rows,
+    total,
+    extra: kpis,
+    page,
+    setPage,
+    totalPages,
+    isLoading,
+    error,
+  } = useFilteredList<KolOutreachRow, KolKpis>(
+    "/api/admin/outreach/kols",
+    { q: debouncedQ, status, source, mine },
+    30,
+    "kpis"
+  );
 
   return (
     <div>

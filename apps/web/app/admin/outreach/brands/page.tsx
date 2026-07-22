@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useDebouncedValue, useFilteredList } from "@/lib/useFilteredList";
 import { OcCard, OcLinkButton, OutreachStatusBadge, Pagination } from "@/components/oc/primitives";
@@ -47,20 +47,21 @@ export default function BrandOutreachPage() {
   const [source, setSource] = useState("");
   const [mine, setMine] = useState(false);
   const debouncedQ = useDebouncedValue(q);
-  const { rows, total, page, setPage, totalPages, isLoading, error } = useFilteredList<BrandOutreachRow>("/api/admin/outreach/brands", {
-    q: debouncedQ,
-    status,
-    source,
-    mine,
-  });
-  const [kpis, setKpis] = useState<BrandKpis | null>(null);
-
-  useEffect(() => {
-    fetch("/api/admin/outreach/metrics?scope=brand")
-      .then((res) => (res.ok ? res.json() : null))
-      .then(setKpis)
-      .catch(() => setKpis(null));
-  }, []);
+  const {
+    rows,
+    total,
+    extra: kpis,
+    page,
+    setPage,
+    totalPages,
+    isLoading,
+    error,
+  } = useFilteredList<BrandOutreachRow, BrandKpis>(
+    "/api/admin/outreach/brands",
+    { q: debouncedQ, status, source, mine },
+    30,
+    "kpis"
+  );
 
   return (
     <div>

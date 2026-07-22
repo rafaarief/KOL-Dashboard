@@ -27,9 +27,13 @@ export async function findKolDuplicates(input: {
 }): Promise<DuplicateMatch[]> {
   const db = getDb();
   const matches: DuplicateMatch[] = [];
+  // Emails are always stored lowercased on users/kolOutreach/brandOutreach (see kols/route.ts,
+  // brands/route.ts, and auth.ts) — normalize the query side too, or "John@Gmail.com" vs.
+  // "john@gmail.com" for the same person silently misses the exact match this check exists for.
+  const email = input.email?.toLowerCase().trim();
 
   const outreachWhere = buildOrConditions([
-    [schema.kolOutreach.email, input.email],
+    [schema.kolOutreach.email, email],
     [schema.kolOutreach.phone, input.phone],
     [schema.kolOutreach.instagramUrl, input.instagramUrl],
     [schema.kolOutreach.tiktokUrl, input.tiktokUrl],
@@ -50,7 +54,7 @@ export async function findKolDuplicates(input: {
     }
   }
 
-  const accountWhere = buildOrConditions([[schema.users.email, input.email]]);
+  const accountWhere = buildOrConditions([[schema.users.email, email]]);
   if (accountWhere) {
     const rows = await db
       .select({ id: schema.creatorProfiles.id, displayName: schema.creatorProfiles.displayName, email: schema.users.email })
@@ -80,9 +84,10 @@ export async function findBrandDuplicates(input: {
 }): Promise<DuplicateMatch[]> {
   const db = getDb();
   const matches: DuplicateMatch[] = [];
+  const email = input.email?.toLowerCase().trim();
 
   const outreachWhere = buildOrConditions([
-    [schema.brandOutreach.email, input.email],
+    [schema.brandOutreach.email, email],
     [schema.brandOutreach.phone, input.phone],
     [schema.brandOutreach.instagramUrl, input.instagramUrl],
     [schema.brandOutreach.tiktokUrl, input.tiktokUrl],
@@ -103,7 +108,7 @@ export async function findBrandDuplicates(input: {
     }
   }
 
-  const accountWhere = buildOrConditions([[schema.users.email, input.email]]);
+  const accountWhere = buildOrConditions([[schema.users.email, email]]);
   if (accountWhere) {
     const rows = await db
       .select({ id: schema.brandProfiles.id, brandName: schema.brandProfiles.brandName, email: schema.users.email })

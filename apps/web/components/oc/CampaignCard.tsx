@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Clock, MapPin, Users } from "lucide-react";
 import { Avatar, CampaignStatusBadge, VerificationBadge, formatIDR, tileAt } from "./primitives";
@@ -66,14 +67,17 @@ export function CampaignCard({ campaign, index = 0 }: { campaign: CampaignCardDa
 
       <Link href={`/campaigns/${campaign.slug}`} className="relative block h-[180px] w-full overflow-hidden rounded-oc-input">
         {campaign.coverImageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- arbitrary admin-entered external
-          // URL; next/image would require a wildcard remotePatterns allowlist for this one field,
-          // so this follows the same plain-<img> convention already used by Avatar/logo rendering.
-          <img
+          // unoptimized: arbitrary admin-entered external URL (no upload pipeline) — this keeps
+          // the browser fetching it directly rather than having the server proxy/optimize
+          // third-party URLs on the admin's behalf, same trust boundary as before, but still
+          // gets next/image's lazy loading and layout-shift-free sizing via `fill`.
+          <Image
             src={campaign.coverImageUrl}
             alt={campaign.coverImageAlt || campaign.title}
-            className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
-            loading="lazy"
+            fill
+            unoptimized
+            sizes="(max-width: 640px) 50vw, 25vw"
+            className="object-cover transition duration-300 group-hover:scale-105"
             onError={(e) => {
               e.currentTarget.style.display = "none";
               e.currentTarget.nextElementSibling?.classList.remove("hidden");

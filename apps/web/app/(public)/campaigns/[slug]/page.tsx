@@ -1,4 +1,5 @@
 import { and, desc, eq, ne, sql } from "drizzle-orm";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -208,8 +209,7 @@ export default async function CampaignDetailPage({ params }: { params: { slug: s
         <div className={`relative overflow-hidden rounded-oc-xl ${tileForSeed(campaign.slug)}`}>
           <div className="relative h-[280px] w-full sm:h-[340px]">
             {campaign.coverImageUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={campaign.coverImageUrl} alt={campaign.coverImageAlt || campaign.title} className="h-full w-full object-cover" />
+              <Image src={campaign.coverImageUrl} alt={campaign.coverImageAlt || campaign.title} fill unoptimized sizes="(max-width: 1024px) 100vw, 700px" className="object-cover" />
             ) : (
               <div className="flex h-full w-full items-center justify-center bg-white/25">
                 <VisualIcon className="h-16 w-16 text-oc-ink/30" strokeWidth={1.5} aria-hidden="true" />

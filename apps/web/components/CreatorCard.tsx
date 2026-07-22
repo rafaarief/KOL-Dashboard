@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { SaveToShortlistButton } from "./SaveToShortlistButton";
 
 export interface CreatorResultRow {
@@ -49,9 +50,12 @@ export function CreatorCard({ row }: { row: CreatorResultRow }) {
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-center gap-3">
           <span className="text-sm font-mono text-slate-500">#{result.rankPosition}</span>
-          <img
+          <Image
             src={creator.profileImageUrl ?? "https://placehold.co/48x48"}
             alt=""
+            width={48}
+            height={48}
+            unoptimized
             className="h-12 w-12 rounded-full object-cover"
           />
           <div>

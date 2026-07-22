@@ -48,7 +48,14 @@ export const authConfig = {
       // including all other /api/admin/* routes, stays admin-only. The individual outreach API
       // route handlers still re-check requireRole(["admin", "outreach_admin"]) themselves
       // (defense-in-depth, same pattern as every other /api/admin/* route).
-      const isOutreachPath = pathname.startsWith("/admin/outreach") || pathname.startsWith("/api/admin/outreach");
+      // Exact-or-subpath match, not a bare prefix check — startsWith("/admin/outreach") alone
+      // would also grant outreach_admin a hypothetical future route like "/admin/outreach-imports"
+      // that has nothing to do with this CRM.
+      const isOutreachPath =
+        pathname === "/admin/outreach" ||
+        pathname.startsWith("/admin/outreach/") ||
+        pathname === "/api/admin/outreach" ||
+        pathname.startsWith("/api/admin/outreach/");
       if (pathname.startsWith("/admin") || ADMIN_ONLY_API_PREFIXES.some((prefix) => pathname.startsWith(prefix))) {
         if (role === "admin") return true;
         if (role === "outreach_admin") return isOutreachPath;

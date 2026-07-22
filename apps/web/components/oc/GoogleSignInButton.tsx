@@ -12,7 +12,11 @@ export function GoogleSignInButton({ role, callbackUrl }: { role?: "creator" | "
   if (!GOOGLE_LOGIN_ENABLED) return null;
 
   function handleClick() {
-    if (role) document.cookie = `oc_oauth_role=${role}; path=/; max-age=300; SameSite=Lax`;
+    // Always write (or explicitly clear) this cookie on every click — never leave a stale value
+    // from an earlier, abandoned attempt on a different page (e.g. starting "Continue with
+    // Google" on /register/brand, abandoning it, then signing in as a genuinely new user from
+    // /login within the cookie's 5-minute window) silently deciding this sign-in's role instead.
+    document.cookie = role ? `oc_oauth_role=${role}; path=/; max-age=300; SameSite=Lax` : "oc_oauth_role=; path=/; max-age=0";
     void signIn("google", { callbackUrl: callbackUrl ?? (role === "brand" ? "/dashboard/brand" : "/dashboard/creator") });
   }
 

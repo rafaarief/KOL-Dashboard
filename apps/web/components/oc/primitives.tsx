@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { OUTREACH_STATUS_LABELS, OUTREACH_STATUS_TONE } from "@/lib/outreachEnums";
@@ -165,8 +166,22 @@ export function Avatar({ name, url, size = 40 }: { name: string; url?: string | 
     .toUpperCase();
 
   if (url) {
-    // eslint-disable-next-line @next/next/no-img-element
-    return <img src={url} alt={name} width={size} height={size} className="rounded-full object-cover" style={{ width: size, height: size }} />;
+    // `unoptimized`: these are arbitrary externally-hosted URLs supplied by users (no upload
+    // pipeline), so this deliberately keeps the existing direct-browser-fetch behavior rather
+    // than having the server proxy/fetch third-party URLs on users' behalf for optimization —
+    // still gets next/image's built-in lazy loading and explicit dimensions (prevents layout
+    // shift), just without changing that trust boundary.
+    return (
+      <Image
+        src={url}
+        alt={name}
+        width={size}
+        height={size}
+        unoptimized
+        className="rounded-full object-cover"
+        style={{ width: size, height: size }}
+      />
+    );
   }
 
   return (

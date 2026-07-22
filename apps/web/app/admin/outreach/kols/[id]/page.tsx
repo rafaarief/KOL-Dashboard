@@ -64,16 +64,31 @@ export default function KolOutreachDetailPage() {
 
   useEffect(load, [params.id]);
 
-  async function patch(body: Record<string, unknown>, successMessage: string) {
+  // Optimistic: flip the relevant fields locally right away so a status click / follow-up /
+  // note save feels instant, then reconcile with the server's authoritative response (or roll
+  // back on failure) — instead of re-fetching the whole detail + timeline on every action.
+  async function patch(body: Record<string, unknown>, successMessage: string, optimistic?: Partial<OutreachDetail>) {
+    const previous = outreach;
+    if (optimistic) setOutreach((prev) => (prev ? { ...prev, ...optimistic } : prev));
     setSaving(true);
+
     const response = await fetch(`/api/admin/outreach/kols/${params.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
     setSaving(false);
-    showToast(response.ok ? successMessage : "That action failed.", response.ok ? "success" : "error");
-    load();
+
+    if (!response.ok) {
+      if (optimistic) setOutreach(previous);
+      showToast("That action failed.", "error");
+      return;
+    }
+
+    const result = await response.json();
+    setOutreach((prev) => (prev ? { ...prev, ...result.outreach } : prev));
+    if (result.events?.length) setEvents((prev) => [...result.events, ...prev]);
+    showToast(successMessage, "success");
   }
 
   if (!outreach) return <p className="text-sm text-oc-ink-muted">Loading…</p>;
@@ -105,12 +120,17 @@ export default function KolOutreachDetailPage() {
         <div className="space-y-4">
           <OcCard className="p-5">
             <p className="text-sm font-semibold text-oc-ink">Status</p>
+            {/* "Converted" is deliberately excluded — it's only ever set by completing Manual
+                KOL Onboarding (which also links convertedCreatorProfileId), never as a manual
+                pill click. Allowing that here left records in an unreachable dead end: no
+                "Convert to Onboarding" link (hidden once status is "converted") and no
+                "View converted profile" link (no profile id ever got set). */}
             <div className="mt-2 flex flex-wrap gap-2">
-              {KOL_OUTREACH_STATUSES.map((s) => (
+              {KOL_OUTREACH_STATUSES.filter((s) => s !== "converted").map((s) => (
                 <button
                   key={s}
                   disabled={saving || s === outreach.status}
-                  onClick={() => patch({ status: s }, "Status updated.")}
+                  onClick={() => patch({ status: s }, "Status updated.", { status: s })}
                   className={`rounded-full border px-3 py-1 text-xs ${
                     s === outreach.status ? "border-oc-dark bg-oc-dark text-white" : "border-oc-border hover:bg-oc-bg"
                   }`}
@@ -119,11 +139,14 @@ export default function KolOutreachDetailPage() {
                 </button>
               ))}
             </div>
+            {outreach.status !== "converted" && (
+              <p className="mt-2 text-xs text-oc-ink-muted">Converted automatically when Manual KOL Onboarding is completed.</p>
+            )}
             <OcButton
               variant="secondary"
               className="mt-3"
               disabled={saving}
-              onClick={() => patch({ logFollowUp: true }, "Follow up logged.")}
+              onClick={() => patch({ logFollowUp: true }, "Follow up logged.", { lastFollowUpAt: new Date().toISOString() })}
             >
               Log follow up today
             </OcButton>
@@ -138,7 +161,7 @@ export default function KolOutreachDetailPage() {
               placeholder="Internal notes only — e.g. Interested but waiting until next month."
               className="mt-2 w-full rounded-oc-input border border-oc-border bg-oc-bg px-3 py-2 text-sm text-oc-ink"
             />
-            <OcButton className="mt-2" disabled={saving} onClick={() => patch({ notes: noteDraft }, "Note saved.")}>
+            <OcButton className="mt-2" disabled={saving} onClick={() => patch({ notes: noteDraft }, "Note saved.", { notes: noteDraft })}>
               Save note
             </OcButton>
           </OcCard>

@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
@@ -81,29 +82,45 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       // Brand-new email — self-registration via Google. The register page sets a short-lived
       // cookie right before calling signIn("google") so we know whether they clicked through
       // from /register/creator or /register/brand; defaults to "creator" if absent (e.g. someone
-      // uses the Google button on the generic /login page with no prior account).
+      // uses the Google button on the generic /login page with no prior account) — that page
+      // always clears the cookie itself (see GoogleSignInButton.tsx) so a stale value from an
+      // abandoned register-page attempt can never leak into an unrelated later sign-in.
       const cookieStore = cookies();
       const intendedRole = cookieStore.get("oc_oauth_role")?.value === "brand" ? "brand" : "creator";
 
-      const [created] = await db
-        .insert(schema.users)
-        .values({ email, fullName: user.name ?? email, role: intendedRole })
-        .returning({ id: schema.users.id });
+      // Wrapped in a transaction so a profile-insert failure (e.g. a username collision) can
+      // never leave behind an orphaned `users` row with no matching profile.
+      const created = await db.transaction(async (tx) => {
+        const [createdUser] = await tx
+          .insert(schema.users)
+          .values({ email, fullName: user.name ?? email, role: intendedRole })
+          .returning({ id: schema.users.id });
 
-      if (intendedRole === "creator") {
-        const base = normalizeUsername(email.split("@")[0] ?? "") || "creator";
-        await db.insert(schema.creatorProfiles).values({
-          userId: created.id,
-          username: `${base}-${created.id.slice(0, 6)}`,
-          displayName: user.name ?? email,
-        });
-      } else {
-        await db.insert(schema.brandProfiles).values({
-          userId: created.id,
-          slug: `brand-${created.id.slice(0, 8)}`,
-          brandName: user.name ?? email,
-        });
-      }
+        if (intendedRole === "creator") {
+          const base = normalizeUsername(email.split("@")[0] ?? "") || "creator";
+          let username = `${base}-${createdUser.id.slice(0, 6)}`;
+          const [usernameTaken] = await tx
+            .select({ id: schema.creatorProfiles.id })
+            .from(schema.creatorProfiles)
+            .where(eq(schema.creatorProfiles.username, username))
+            .limit(1);
+          if (usernameTaken) username = `${base}-${crypto.randomUUID().slice(0, 8)}`;
+
+          await tx.insert(schema.creatorProfiles).values({
+            userId: createdUser.id,
+            username,
+            displayName: user.name ?? email,
+          });
+        } else {
+          await tx.insert(schema.brandProfiles).values({
+            userId: createdUser.id,
+            slug: `brand-${createdUser.id.slice(0, 8)}`,
+            brandName: user.name ?? email,
+          });
+        }
+
+        return createdUser;
+      });
 
       user.id = created.id;
       user.role = intendedRole;

@@ -1,4 +1,5 @@
 import { and, desc, eq, ne, sql } from "drizzle-orm";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getDb, schema } from "@/lib/db";
@@ -231,10 +232,9 @@ export default async function CreatorProfilePage({ params }: { params: { usernam
           </div>
 
           <div className="relative mx-auto w-full max-w-[220px] sm:ml-auto sm:mr-4">
-            <div className="aspect-[11/14] w-full overflow-hidden rounded-oc-lg bg-white/40">
+            <div className="relative aspect-[11/14] w-full overflow-hidden rounded-oc-lg bg-white/40">
               {creator.avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={creator.avatarUrl} alt={creator.displayName} className="h-full w-full object-cover" />
+                <Image src={creator.avatarUrl} alt={creator.displayName} fill unoptimized sizes="220px" className="object-cover" />
               ) : (
                 <div className="flex h-full w-full items-center justify-center font-display text-4xl font-extrabold text-oc-ink/30">
                   {creator.displayName.slice(0, 1)}
